@@ -75,9 +75,9 @@ jobs:
             r'id\s+"com\.android\.application"\s+version\s+".*?"',
             'id "com.android.application" version "7.4.2"', c))
 
-        # SDK versions — minSdk 21 for broadest Android support
+        # SDK versions — minSdk 23 (required by record package), covers Android 6+
         rw('android/app/build.gradle', lambda c: re.sub(
-            r'flutter\.minSdkVersion', '21', c))
+            r'flutter\.minSdkVersion', '23', c))
         rw('android/app/build.gradle', lambda c: re.sub(
             r'flutter\.compileSdkVersion', '34', c))
         rw('android/app/build.gradle', lambda c: re.sub(

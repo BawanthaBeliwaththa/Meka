@@ -111,6 +111,15 @@ jobs:
         print("Android config patched successfully")
         EOF
 
+    - name: Inject MainActivity.kt
+      if: matrix.target == 'android'
+      run: |
+        DEST="android/app/src/main/kotlin/com/example/meka"
+        mkdir -p "$DEST"
+        cp android_src/MainActivity.kt "$DEST/MainActivity.kt"
+        echo "MainActivity.kt injected"
+      shell: bash
+
     - name: Install dependencies
       run: flutter pub get
 

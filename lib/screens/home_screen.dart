@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               // Clear history
               IconButton(
-                icon: const Icon(Icons.history, color: Colors.white.withOpacity(0.54)),
+                icon: Icon(Icons.history, color: Colors.white.withOpacity(0.54)),
                 onPressed: () {
                   setState(() {
                     _bubbles.clear();
@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               // Settings
               IconButton(
-                icon: const Icon(Icons.settings_outlined, color: Colors.white.withOpacity(0.54)),
+                icon: Icon(Icons.settings_outlined, color: Colors.white.withOpacity(0.54)),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -339,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.waving_hand, color: Colors.white.withOpacity(0.12), size: 48),
+            Icon(Icons.waving_hand, color: Colors.white.withOpacity(0.12), size: 48),
             const SizedBox(height: 12),
             Text(
               'Tap the orb or say\n"Hey Meka" to start',
@@ -425,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ],
               ),
-              child: const Icon(Icons.mic, color: Colors.white, size: 28),
+              child: Icon(Icons.mic, color: Colors.white, size: 28),
             ),
           ),
         ],

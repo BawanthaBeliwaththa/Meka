@@ -102,7 +102,7 @@ class _SetupScreenState extends State<SetupScreen>
                 ),
               ],
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 48),
+            child: Icon(Icons.auto_awesome, color: Colors.white, size: 48),
           ),
         ),
         const SizedBox(height: 40),
@@ -149,7 +149,7 @@ class _SetupScreenState extends State<SetupScreen>
               hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.24)),
               border: InputBorder.none,
               prefixIcon:
-                  const Icon(Icons.person_outline, color: Colors.white.withOpacity(0.38)),
+                  Icon(Icons.person_outline, color: Colors.white.withOpacity(0.38)),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
@@ -167,7 +167,7 @@ class _SetupScreenState extends State<SetupScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Spacer(),
-        const Icon(Icons.psychology_outlined,
+        Icon(Icons.psychology_outlined,
             color: Color(0xFF6C63FF), size: 48),
         const SizedBox(height: 24),
         Text(
@@ -219,7 +219,7 @@ class _SetupScreenState extends State<SetupScreen>
               hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.24), fontSize: 13),
               border: InputBorder.none,
               prefixIcon:
-                  const Icon(Icons.vpn_key_outlined, color: Colors.white.withOpacity(0.38)),
+                  Icon(Icons.vpn_key_outlined, color: Colors.white.withOpacity(0.38)),
               suffixIcon: IconButton(
                 icon: Icon(
                   _keyVisible ? Icons.visibility_off : Icons.visibility,

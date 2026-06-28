@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             letterSpacing: 3,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white.withOpacity(0.54)),
+        iconTheme: IconThemeData(color: Colors.white.withOpacity(0.54)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),

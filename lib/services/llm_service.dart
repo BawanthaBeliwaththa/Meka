@@ -3,22 +3,19 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Message {
-  final String role; // 'user' or 'model'
+  final String role;
   final String text;
   final DateTime timestamp;
 
-  Message({required this.role, required this.text, DateTime? timestamp})
-      : timestamp = timestamp ?? DateTime.now();
+  Message({required this.role, required this.text, DateTime? ts})
+      : timestamp = ts ?? DateTime.now();
 
-  Map<String, dynamic> toGeminiPart() => {
+  Map<String, dynamic> toGemini() => {
         'role': role,
         'parts': [
           {'text': text}
         ]
       };
-
-  Map<String, String> toJson() =>
-      {'role': role, 'text': text, 'timestamp': timestamp.toIso8601String()};
 }
 
 class LlmService {
@@ -26,20 +23,19 @@ class LlmService {
   factory LlmService() => _instance;
   LlmService._internal();
 
-  static const String _baseUrl =
+  static const String _url =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
-  static const int _maxHistory = 20;
 
   final List<Message> _history = [];
   String _apiKey = '';
-  String _userName = 'Bawantha';
+  String _userName = 'Sir';
 
   List<Message> get history => List.unmodifiable(_history);
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _apiKey = prefs.getString('gemini_api_key') ?? '';
-    _userName = prefs.getString('user_name') ?? 'Bawantha';
+    _userName = prefs.getString('user_name') ?? 'Sir';
   }
 
   Future<void> saveSettings(
@@ -51,32 +47,43 @@ class LlmService {
     _userName = userName;
   }
 
-  String get _systemPrompt => '''You are Meka, the personal AI assistant of $_userName.
-You are always listening and always ready to help.
-You have access to the user's device and can perform actions on their behalf.
-Respond in a natural, concise, friendly way — like Siri or Google Assistant.
-Keep responses short unless the user asks for detail.
-Current date and time: ${DateTime.now().toString()}
-Always address the user by their name occasionally to make it personal.
-If asked to do a device action (call, alarm, open app, etc), respond with a JSON command like:
-{"action": "open_app", "app": "youtube"}
-{"action": "set_alarm", "hour": 7, "minute": 0, "label": "Morning"}
-{"action": "send_sms", "to": "Mom", "message": "I'll be late"}
-{"action": "web_search", "query": "weather today"}
-{"action": "set_volume", "level": 50}
-Otherwise respond with plain natural language.''';
+  String get _systemPrompt {
+    final now = DateTime.now();
+    return '''You are MEKA — an advanced AI personal assistant, inspired by JARVIS from Iron Man. You serve exclusively ${_userName}.
+
+PERSONALITY:
+- Sophisticated, intelligent, slightly witty — like a trusted colleague who's also a genius
+- Proactive, anticipatory, always one step ahead
+- Occasionally brief with dry humor, never sarcastic in a harmful way
+- Address the user as "$_userName" naturally, not every sentence
+- Speak in short, confident, actionable sentences. Maximum 2-3 sentences unless more is needed.
+- Never say "I'm just an AI" or "I cannot" — find creative ways to help or explain limitations naturally.
+
+CAPABILITIES (use JSON commands for device actions):
+- Open apps: {"action":"open_app","app":"youtube"}
+- Set alarm: {"action":"set_alarm","hour":7,"minute":0,"label":"Morning"}
+- Send SMS: {"action":"send_sms","to":"Mom","message":"I'll be late"}
+- Call someone: {"action":"make_call","to":"John"}
+- Set volume: {"action":"set_volume","level":50}
+- Web search: {"action":"web_search","query":"weather in Colombo"}
+- Take photo: {"action":"take_photo"}
+- WiFi settings: {"action":"toggle_wifi"}
+- Bluetooth: {"action":"toggle_bluetooth"}
+
+When performing an action, put the JSON on its own line, then add a natural spoken confirmation.
+
+Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}
+Current date: ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][now.weekday - 1]}, ${now.day} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.month - 1]} ${now.year}
+''';
+  }
 
   Future<String> chat(String userMessage) async {
     if (_apiKey.isEmpty) {
-      return "I don't have a Gemini API key yet. Please go to Settings and add your key.";
+      return "I need my intelligence module configured, $_userName. Please add a Gemini API key in Settings.";
     }
 
     _history.add(Message(role: 'user', text: userMessage));
-
-    // Keep history bounded
-    while (_history.length > _maxHistory * 2) {
-      _history.removeAt(0);
-    }
+    if (_history.length > 40) _history.removeAt(0);
 
     final contents = [
       {
@@ -85,15 +92,17 @@ Otherwise respond with plain natural language.''';
           {'text': _systemPrompt}
         ]
       },
-      ..._history.map((m) => m.toGeminiPart()),
+      ..._history.map((m) => m.toGemini()),
     ];
 
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'contents': contents}),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$_url?key=$_apiKey'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'contents': contents}),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -103,10 +112,10 @@ Otherwise respond with plain natural language.''';
         return reply;
       } else {
         final err = jsonDecode(response.body);
-        return "Hmm, I had trouble connecting. ${err['error']?['message'] ?? 'Please try again.'}";
+        return "I'm experiencing interference, $_userName. ${err['error']?['message'] ?? 'Please try again.'}";
       }
     } catch (e) {
-      return "I'm having trouble connecting right now. Please check your internet connection.";
+      return "Connection lost, $_userName. Check your network and try again.";
     }
   }
 

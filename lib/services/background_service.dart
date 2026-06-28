@@ -6,8 +6,6 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tts_service.dart';
-import 'stt_service.dart';
-import 'llm_service.dart';
 
 class MekaBackgroundService {
   static final FlutterBackgroundService _service = FlutterBackgroundService();
@@ -16,11 +14,16 @@ class MekaBackgroundService {
     final FlutterLocalNotificationsPlugin notifications =
         FlutterLocalNotificationsPlugin();
 
+    // SILENT channel — no sound, no vibration, no lights, lowest importance
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'meka_foreground',
+      'meka_silent',
       'Meka Assistant',
-      description: 'Meka is listening for your voice',
-      importance: Importance.low,
+      description: 'Meka is ready',
+      importance: Importance.min,
+      playSound: false,
+      enableVibration: false,
+      enableLights: false,
+      showBadge: false,
     );
 
     await notifications
@@ -33,10 +36,11 @@ class MekaBackgroundService {
         onStart: onStart,
         autoStart: true,
         isForegroundMode: true,
-        notificationChannelId: 'meka_foreground',
-        initialNotificationTitle: 'Meka is ready',
-        initialNotificationContent: 'Say "Hey Meka" to get started',
+        notificationChannelId: 'meka_silent',
+        initialNotificationTitle: 'Meka',
+        initialNotificationContent: '',
         foregroundServiceNotificationId: 888,
+        foregroundServiceTypes: [AndroidForegroundType.microphone],
       ),
       iosConfiguration: IosConfiguration(
         autoStart: true,
@@ -47,41 +51,22 @@ class MekaBackgroundService {
     await _service.startService();
   }
 
-  static void stop() {
-    _instance?.invoke('stop');
-  }
-
   static ServiceInstance? _instance;
 
   static Future<void> onStart(ServiceInstance service) async {
     DartPluginRegistrant.ensureInitialized();
     _instance = service;
 
-    service.on('stop').listen((_) {
-      service.stopSelf();
-    });
+    service.on('stop').listen((_) => service.stopSelf());
 
     service.on('speak').listen((data) async {
       if (data != null && data['text'] != null) {
-        final tts = TtsService();
-        await tts.speak(data['text'] as String);
-      }
-    });
-
-    // Update notification periodically
-    Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (service is AndroidServiceInstance) {
-        service.setForegroundNotificationInfo(
-          title: 'Meka is listening',
-          content: 'Say "Hey Meka" anytime',
-        );
+        await TtsService().speak(data['text'] as String);
       }
     });
   }
+
+  static void stop() => _instance?.invoke('stop');
 
   static FlutterBackgroundService get instance => _service;
-
-  static void sendToUI(String event, Map<String, dynamic> data) {
-    _instance?.invoke(event, data);
-  }
 }

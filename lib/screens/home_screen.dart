@@ -7,79 +7,82 @@ import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final WakeWordService _wakeWord = WakeWordService();
   final LlmService _llm = LlmService();
 
-  late AnimationController _pulseController;
-  late AnimationController _waveController;
-  late AnimationController _orbController;
+  // Animations
+  late AnimationController _ringCtrl;
+  late AnimationController _particleCtrl;
+  late AnimationController _pulseCtrl;
+  late AnimationController _waveCtrl;
 
   WakeWordState _state = WakeWordState.idle;
   String _transcript = '';
-  String _lastResponse = '';
-  final List<_ChatBubble> _bubbles = [];
-  final ScrollController _scrollController = ScrollController();
+  final List<_Msg> _messages = [];
+  final ScrollController _scroll = ScrollController();
+  bool _panelOpen = false;
+
+  // Particle system
+  final List<_Particle> _particles = [];
+  final _rand = Random();
 
   @override
   void initState() {
     super.initState();
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+    _ringCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 6))..repeat();
+    _particleCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 3))..repeat();
+    _pulseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500))
+      ..repeat(reverse: true);
+    _waveCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
 
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    _orbController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
+    // Initialize particles
+    for (int i = 0; i < 60; i++) {
+      _particles.add(_Particle.random(_rand));
+    }
 
     _wakeWord.start();
 
-    _wakeWord.stateStream.listen((state) {
-      if (mounted) setState(() => _state = state);
-      if (state == WakeWordState.listening) {
-        _waveController.repeat(reverse: true);
+    _wakeWord.stateStream.listen((s) {
+      if (!mounted) return;
+      setState(() => _state = s);
+      if (s == WakeWordState.listening) {
+        _waveCtrl.repeat(reverse: true);
       } else {
-        _waveController.stop();
+        _waveCtrl.stop();
+        _waveCtrl.reset();
       }
     });
 
-    _wakeWord.transcriptStream.listen((text) {
-      if (mounted) setState(() => _transcript = text);
+    _wakeWord.transcriptStream.listen((t) {
+      if (mounted) setState(() => _transcript = t);
     });
 
-    _wakeWord.responseStream.listen((text) {
-      if (mounted) {
-        setState(() {
-          _lastResponse = text;
-          _bubbles.add(_ChatBubble(text: text, isUser: false));
-        });
-        _scrollToBottom();
-      }
+    _wakeWord.responseStream.listen((r) {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(_Msg(text: r, isUser: false));
+        _panelOpen = true;
+      });
+      _scrollToBottom();
     });
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(_scroll.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut);
       }
     });
   }
@@ -87,62 +90,76 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _wakeWord.stop();
-    _pulseController.dispose();
-    _waveController.dispose();
-    _orbController.dispose();
-    _scrollController.dispose();
+    _ringCtrl.dispose();
+    _particleCtrl.dispose();
+    _pulseCtrl.dispose();
+    _waveCtrl.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  Color get _stateColor {
+  // ─── Colors per state ────────────────────────────────────────────────────
+  Color get _primaryColor {
     switch (_state) {
-      case WakeWordState.idle:
-        return const Color(0xFF6C63FF);
-      case WakeWordState.listening:
-        return const Color(0xFF00D4FF);
-      case WakeWordState.processing:
-        return const Color(0xFFFFD600);
-      case WakeWordState.speaking:
-        return const Color(0xFF00E676);
-      case WakeWordState.error:
-        return const Color(0xFFFF5252);
+      case WakeWordState.idle: return const Color(0xFF00D4FF);
+      case WakeWordState.listening: return const Color(0xFF7C4DFF);
+      case WakeWordState.processing: return const Color(0xFFFF6D00);
+      case WakeWordState.speaking: return const Color(0xFF00E676);
+      case WakeWordState.error: return const Color(0xFFFF1744);
     }
   }
 
-  String get _stateLabel {
+  String get _statusText {
     switch (_state) {
-      case WakeWordState.idle:
-        return 'Say "Hey Meka"';
-      case WakeWordState.listening:
-        return 'Listening...';
-      case WakeWordState.processing:
-        return 'Thinking...';
-      case WakeWordState.speaking:
-        return 'Speaking...';
-      case WakeWordState.error:
-        return 'Error — Tap to retry';
+      case WakeWordState.idle: return 'STANDBY — SAY "HEY MEKA"';
+      case WakeWordState.listening: return 'LISTENING';
+      case WakeWordState.processing: return 'PROCESSING';
+      case WakeWordState.speaking: return 'RESPONDING';
+      case WakeWordState.error: return 'ERROR — TAP TO RETRY';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: const Color(0xFF010409),
       body: Stack(
         children: [
-          // Animated gradient background
-          _buildBackground(),
+          // ── Starfield / Particle Background ─────────────────────────
+          AnimatedBuilder(
+            animation: _particleCtrl,
+            builder: (_, __) => CustomPaint(
+              size: MediaQuery.of(context).size,
+              painter: _StarfieldPainter(_particles, _particleCtrl.value, _primaryColor),
+            ),
+          ),
 
+          // ── Main content ──────────────────────────────────────────────
           SafeArea(
             child: Column(
               children: [
                 _buildTopBar(),
-                _buildOrbSection(),
-                _buildStatusLabel(),
+                Expanded(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Rotating outer rings
+                      _buildRings(),
+                      // Central orb
+                      _buildCoreOrb(),
+                    ],
+                  ),
+                ),
+                // Status + transcript
+                _buildStatusBar(),
+                // Slide-up conversation panel
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOutCubic,
+                  height: _panelOpen ? 260 : 60,
+                  child: _buildConversationPanel(),
+                ),
                 const SizedBox(height: 8),
-                _buildTranscript(),
-                Expanded(child: _buildChatHistory()),
-                _buildBottomBar(),
               ],
             ),
           ),
@@ -151,147 +168,131 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildBackground() {
-    return AnimatedBuilder(
-      animation: _orbController,
-      builder: (_, __) {
-        return CustomPaint(
-          size: Size.infinite,
-          painter: _BackgroundPainter(_orbController.value, _stateColor),
-        );
-      },
-    );
-  }
-
+  // ─── Top Bar ─────────────────────────────────────────────────────────────
   Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'MEKA',
-            style: GoogleFonts.orbitron(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 6,
-            ),
-          ),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Clear history
-              IconButton(
-                icon: Icon(Icons.history, color: Colors.white.withOpacity(0.54)),
-                onPressed: () {
-                  setState(() {
-                    _bubbles.clear();
-                    _llm.clearHistory();
-                  });
-                },
+              Text(
+                'M E K A',
+                style: GoogleFonts.orbitron(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: _primaryColor,
+                  letterSpacing: 8,
+                ),
               ),
-              // Settings
-              IconButton(
-                icon: Icon(Icons.settings_outlined, color: Colors.white.withOpacity(0.54)),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              Text(
+                'PERSONAL INTELLIGENCE SYSTEM',
+                style: GoogleFonts.orbitron(
+                  fontSize: 7,
+                  color: Colors.white.withOpacity(0.35),
+                  letterSpacing: 3,
                 ),
               ),
             ],
+          ),
+          const Spacer(),
+          // State indicator dot
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _primaryColor
+                    .withOpacity(0.4 + _pulseCtrl.value * 0.6),
+                boxShadow: [
+                  BoxShadow(
+                    color: _primaryColor.withOpacity(0.6),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.tune_rounded,
+                color: Colors.white.withOpacity(0.5), size: 22),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOrbSection() {
+  // ─── Rotating Rings ───────────────────────────────────────────────────────
+  Widget _buildRings() {
+    return AnimatedBuilder(
+      animation: _ringCtrl,
+      builder: (_, __) => CustomPaint(
+        size: const Size(320, 320),
+        painter: _RingsPainter(_ringCtrl.value, _primaryColor),
+      ),
+    );
+  }
+
+  // ─── Core Orb ────────────────────────────────────────────────────────────
+  Widget _buildCoreOrb() {
     return GestureDetector(
       onTap: () {
         if (_state == WakeWordState.idle || _state == WakeWordState.error) {
           _wakeWord.triggerManually();
         }
       },
-      child: SizedBox(
-        height: 200,
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _pulseController,
-            builder: (_, child) {
-              final scale = _state == WakeWordState.idle
-                  ? 1.0 + _pulseController.value * 0.05
-                  : _state == WakeWordState.listening
-                      ? 1.0 + _pulseController.value * 0.15
-                      : 1.0;
-              return Transform.scale(
-                scale: scale,
-                child: child,
-              );
-            },
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Outer glow ring
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _stateColor.withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                ),
-                // Middle ring
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _stateColor.withOpacity(0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                // Core orb
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _stateColor.withOpacity(0.9),
-                        _stateColor.withOpacity(0.4),
-                        _stateColor.withOpacity(0.0),
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _stateColor.withOpacity(0.5),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _state == WakeWordState.listening
-                        ? Icons.mic
-                        : _state == WakeWordState.processing
-                            ? Icons.psychology_outlined
-                            : _state == WakeWordState.speaking
-                                ? Icons.volume_up_rounded
-                                : Icons.mic_none_rounded,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
+      child: AnimatedBuilder(
+        animation: _pulseCtrl,
+        builder: (_, child) {
+          final scale = _state == WakeWordState.listening
+              ? 1.0 + _pulseCtrl.value * 0.12
+              : _state == WakeWordState.processing
+                  ? 0.95 + _pulseCtrl.value * 0.07
+                  : 1.0 + _pulseCtrl.value * 0.03;
+          return Transform.scale(scale: scale, child: child);
+        },
+        child: Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                _primaryColor.withOpacity(0.9),
+                _primaryColor.withOpacity(0.3),
+                Colors.transparent,
               ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _primaryColor.withOpacity(0.6),
+                blurRadius: 50,
+                spreadRadius: 10,
+              ),
+              BoxShadow(
+                color: _primaryColor.withOpacity(0.3),
+                blurRadius: 100,
+                spreadRadius: 30,
+              ),
+            ],
+          ),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Icon(
+                _stateIcon,
+                key: ValueKey(_state),
+                color: Colors.white,
+                size: 44,
+              ),
             ),
           ),
         ),
@@ -299,166 +300,253 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildStatusLabel() {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: Text(
-        _stateLabel,
-        key: ValueKey(_stateLabel),
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          color: _stateColor,
-          letterSpacing: 1.5,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
+  IconData get _stateIcon {
+    switch (_state) {
+      case WakeWordState.idle: return Icons.graphic_eq;
+      case WakeWordState.listening: return Icons.mic;
+      case WakeWordState.processing: return Icons.memory;
+      case WakeWordState.speaking: return Icons.surround_sound;
+      case WakeWordState.error: return Icons.error_outline;
+    }
   }
 
-  Widget _buildTranscript() {
-    if (_transcript.isEmpty) return const SizedBox(height: 20);
+  // ─── Status Bar ──────────────────────────────────────────────────────────
+  Widget _buildStatusBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Text(
-        '"$_transcript"',
-        style: GoogleFonts.inter(
-          fontSize: 13,
-          color: Colors.white.withOpacity(0.38),
-          fontStyle: FontStyle.italic,
-        ),
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+      child: Column(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Text(
+              _statusText,
+              key: ValueKey(_statusText),
+              style: GoogleFonts.orbitron(
+                fontSize: 11,
+                color: _primaryColor,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (_transcript.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '"$_transcript"',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.40),
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildChatHistory() {
-    if (_bubbles.isEmpty) {
-      return Center(
+  // ─── Conversation Panel ───────────────────────────────────────────────────
+  Widget _buildConversationPanel() {
+    return GestureDetector(
+      onTap: () => setState(() => _panelOpen = !_panelOpen),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white.withOpacity(0.04),
+          border: Border.all(color: _primaryColor.withOpacity(0.2)),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.waving_hand, color: Colors.white.withOpacity(0.12), size: 48),
-            const SizedBox(height: 12),
-            Text(
-              'Tap the orb or say\n"Hey Meka" to start',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.24),
+            // Handle
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _panelOpen ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                    color: Colors.white.withOpacity(0.3),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'DIALOGUE LOG',
+                    style: GoogleFonts.orbitron(
+                      fontSize: 9,
+                      color: Colors.white.withOpacity(0.3),
+                      letterSpacing: 3,
+                    ),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
+            if (_panelOpen)
+              Expanded(
+                child: _messages.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No dialogue yet.\nTap the orb or say "Hey Meka".',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.25),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scroll,
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        itemCount: _messages.length,
+                        itemBuilder: (_, i) => _buildBubble(_messages[i]),
+                      ),
+              ),
           ],
         ),
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: _bubbles.length,
-      itemBuilder: (_, i) => _buildBubble(_bubbles[i]),
+      ),
     );
   }
 
-  Widget _buildBubble(_ChatBubble bubble) {
+  Widget _buildBubble(_Msg msg) {
     return Align(
-      alignment: bubble.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
-        ),
+        margin: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: bubble.isUser
-              ? const Color(0xFF6C63FF).withOpacity(0.3)
-              : Colors.white.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(14),
+          color: msg.isUser
+              ? _primaryColor.withOpacity(0.15)
+              : Colors.white.withOpacity(0.06),
           border: Border.all(
-            color: bubble.isUser
-                ? const Color(0xFF6C63FF).withOpacity(0.4)
-                : Colors.white.withOpacity(0.1),
+            color: msg.isUser
+                ? _primaryColor.withOpacity(0.4)
+                : Colors.white.withOpacity(0.08),
             width: 1,
           ),
         ),
         child: Text(
-          bubble.text,
+          msg.text,
           style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.white.withOpacity(0.87),
+            fontSize: 13,
+            color: Colors.white.withOpacity(0.85),
             height: 1.5,
           ),
         ),
       ),
     );
   }
-
-  Widget _buildBottomBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Manual mic button
-          GestureDetector(
-            onTap: () => _wakeWord.triggerManually(),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    _stateColor,
-                    _stateColor.withOpacity(0.5),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _stateColor.withOpacity(0.4),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Icon(Icons.mic, color: Colors.white, size: 28),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-class _ChatBubble {
+// ─── Data ─────────────────────────────────────────────────────────────────
+class _Msg {
   final String text;
   final bool isUser;
-  _ChatBubble({required this.text, required this.isUser});
+  _Msg({required this.text, required this.isUser});
 }
 
-class _BackgroundPainter extends CustomPainter {
+class _Particle {
+  double x, y, speed, size, opacity;
+  _Particle({required this.x, required this.y,
+      required this.speed, required this.size, required this.opacity});
+
+  factory _Particle.random(Random r) => _Particle(
+        x: r.nextDouble(),
+        y: r.nextDouble(),
+        speed: 0.0005 + r.nextDouble() * 0.001,
+        size: 0.5 + r.nextDouble() * 1.5,
+        opacity: 0.1 + r.nextDouble() * 0.5,
+      );
+}
+
+// ─── Painters ─────────────────────────────────────────────────────────────
+class _StarfieldPainter extends CustomPainter {
+  final List<_Particle> particles;
   final double t;
-  final Color color;
-  _BackgroundPainter(this.t, this.color);
+  final Color accent;
+  _StarfieldPainter(this.particles, this.t, this.accent);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    // Draw subtle moving blobs
-    for (int i = 0; i < 3; i++) {
-      final angle = (t + i / 3) * 2 * pi;
-      final x = size.width / 2 + cos(angle) * size.width * 0.25;
-      final y = size.height / 2 + sin(angle) * size.height * 0.2;
-      paint.color = color.withOpacity(0.03 - i * 0.008);
-      canvas.drawCircle(Offset(x, y), 200 - i * 30, paint);
+    final paint = Paint();
+    for (final p in particles) {
+      final y = ((p.y + t * p.speed) % 1.0);
+      paint.color = accent.withOpacity(p.opacity * 0.5);
+      canvas.drawCircle(
+          Offset(p.x * size.width, y * size.height), p.size, paint);
     }
   }
 
   @override
-  bool shouldRepaint(_BackgroundPainter old) => old.t != t || old.color != color;
+  bool shouldRepaint(_StarfieldPainter old) => old.t != t || old.accent != accent;
+}
+
+class _RingsPainter extends CustomPainter {
+  final double t;
+  final Color color;
+  _RingsPainter(this.t, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Rings at different speeds and radii
+    final rings = [
+      (120.0, 1.0, 0.15, 0.0),
+      (150.0, -0.7, 0.10, pi / 6),
+      (180.0, 0.5, 0.07, pi / 3),
+      (100.0, -1.2, 0.20, pi / 4),
+    ];
+
+    for (final (radius, speed, opacity, offset) in rings) {
+      paint.color = color.withOpacity(opacity);
+      final angle = t * 2 * pi * speed + offset;
+
+      // Draw dashed-looking arc segments
+      for (int i = 0; i < 8; i++) {
+        final startAngle = angle + i * pi / 4;
+        final sweepAngle = pi / 6;
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius),
+          startAngle,
+          sweepAngle,
+          false,
+          paint,
+        );
+      }
+    }
+
+    // Scanning line
+    final scanPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..color = color.withOpacity(0.25);
+    final scanAngle = t * 2 * pi;
+    canvas.drawLine(
+      center,
+      Offset(center.dx + cos(scanAngle) * 190,
+             center.dy + sin(scanAngle) * 190),
+      scanPaint,
+    );
+
+    // Gradient sweep (scan glow)
+    final sweepPaint = Paint()
+      ..shader = SweepGradient(
+        colors: [Colors.transparent, color.withOpacity(0.08), Colors.transparent],
+        stops: const [0.0, 0.05, 0.15],
+        transform: GradientRotation(scanAngle),
+      ).createShader(Rect.fromCircle(center: center, radius: 190));
+    canvas.drawCircle(center, 190, sweepPaint);
+  }
+
+  @override
+  bool shouldRepaint(_RingsPainter old) => old.t != t || old.color != color;
 }

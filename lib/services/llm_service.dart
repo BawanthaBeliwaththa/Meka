@@ -25,7 +25,7 @@ class LlmService {
   LlmService._internal();
 
   static const String _url =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
   final List<Message> _history = [];
   String _apiKey = '';

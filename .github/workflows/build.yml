@@ -52,14 +52,14 @@ jobs:
     - name: Fix Android Build Config
       if: matrix.target == 'android'
       run: |
-        python3 << 'EOF'
+        python3 << 'PYEOF'
         import os, re
 
         def rw(path, fn):
             if os.path.exists(path):
                 with open(path, 'r') as f: c = f.read()
-                c = fn(c)
-                with open(path, 'w') as f: f.write(c)
+                nc = fn(c)
+                with open(path, 'w') as f: f.write(nc)
 
         # Kotlin + AGP versions
         rw('android/build.gradle', lambda c: re.sub(
@@ -68,8 +68,6 @@ jobs:
         rw('android/build.gradle', lambda c: re.sub(
             r'classpath\s+"com\.android\.tools\.build:gradle:.*?"',
             'classpath "com.android.tools.build:gradle:7.4.2"', c))
-
-        # Settings plugins (Kotlin DSL style)
         rw('android/settings.gradle', lambda c: re.sub(
             r'id\s+"org\.jetbrains\.kotlin\.android"\s+version\s+".*?"',
             'id "org.jetbrains.kotlin.android" version "1.9.22"', c))
@@ -77,15 +75,15 @@ jobs:
             r'id\s+"com\.android\.application"\s+version\s+".*?"',
             'id "com.android.application" version "7.4.2"', c))
 
-        # App build.gradle — SDK versions
+        # SDK versions — minSdk 21 for broadest Android support
         rw('android/app/build.gradle', lambda c: re.sub(
-            r'flutter\.minSdkVersion', '24', c))
+            r'flutter\.minSdkVersion', '21', c))
         rw('android/app/build.gradle', lambda c: re.sub(
             r'flutter\.compileSdkVersion', '34', c))
         rw('android/app/build.gradle', lambda c: re.sub(
             r'flutter\.targetSdkVersion', '34', c))
 
-        # Permissions in AndroidManifest
+        # Permissions — only cross-version safe ones
         manifest = 'android/app/src/main/AndroidManifest.xml'
         if os.path.exists(manifest):
             with open(manifest, 'r') as f: c = f.read()
@@ -93,23 +91,25 @@ jobs:
                 'android.permission.RECORD_AUDIO',
                 'android.permission.INTERNET',
                 'android.permission.RECEIVE_BOOT_COMPLETED',
-                'android.permission.FOREGROUND_SERVICE',
-                'android.permission.FOREGROUND_SERVICE_MICROPHONE',
-                'android.permission.POST_NOTIFICATIONS',
                 'android.permission.CALL_PHONE',
                 'android.permission.SEND_SMS',
                 'android.permission.READ_CONTACTS',
+                'android.permission.WAKE_LOCK',
             ]
             inject = ''
             for p in perms:
                 if p not in c:
                     inject += f'    <uses-permission android:name="{p}" />\n'
+            # POST_NOTIFICATIONS only for Android 13+
+            if 'POST_NOTIFICATIONS' not in c:
+                inject += '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />\n'
             if inject:
                 c = c.replace('<application', inject + '<application', 1)
                 with open(manifest, 'w') as f: f.write(c)
+            print("Manifest patched")
 
         print("Android config patched successfully")
-        EOF
+        PYEOF
 
     - name: Inject MainActivity.kt
       if: matrix.target == 'android'

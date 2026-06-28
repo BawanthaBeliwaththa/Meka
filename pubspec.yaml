@@ -10,13 +10,12 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI & Styling
+  # UI
   google_fonts: ^6.1.0
 
-  # Audio Recording & TTS
+  # Audio & TTS
   record: ^5.0.5
   flutter_tts: ^3.8.3
-  just_audio: ^0.9.36
 
   # Speech Recognition
   speech_to_text: ^6.6.0
@@ -27,16 +26,12 @@ dependencies:
   # Networking & AI
   http: ^1.2.0
 
-  # Background Service
-  flutter_background_service: ^5.0.5
-  flutter_local_notifications: ^17.0.0
-
-  # Storage & Preferences
+  # Storage
   shared_preferences: ^2.2.2
   path_provider: ^2.1.1
 
-  # Animations
-  lottie: ^3.0.0
+  # Keep CPU awake while listening
+  wakelock_plus: ^1.2.8
 
 dev_dependencies:
   flutter_test:

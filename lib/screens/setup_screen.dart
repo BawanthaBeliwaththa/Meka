@@ -295,7 +295,7 @@ class _SetupScreenState extends State<SetupScreen>
                 child: Center(
                   child: i < _pitches.length
                       ? const Icon(Icons.check, color: Color(0xFF00E676), size: 18)
-                      : _isRecording && i == _durations.length
+                      : _isRecording && i == _pitches.length
                           ? const SizedBox(
                               width: 16, height: 16,
                               child: CircularProgressIndicator(

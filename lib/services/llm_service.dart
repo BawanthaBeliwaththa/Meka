@@ -70,6 +70,10 @@ CAPABILITIES (use JSON commands for device actions):
 - Take photo: {"action":"take_photo"}
 - WiFi settings: {"action":"toggle_wifi"}
 - Bluetooth: {"action":"toggle_bluetooth"}
+- List files in a directory: {"action":"list_files","path":"/sdcard/Download"}
+- Read a file's content: {"action":"read_file_content","path":"/sdcard/Download/note.txt"}
+- Find/search files by name query: {"action":"find_files","query":"report"}
+- Exclude from Battery Optimizations (run in background always): {"action":"request_battery_optimization_ignore"}
 
 When performing an action, put the JSON on its own line, then add a natural spoken confirmation.
 

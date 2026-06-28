@@ -45,8 +45,16 @@ class WakeWordService {
   Future<void> start() async {
     if (_active) return;
 
-    final micStatus = await Permission.microphone.request();
-    if (!micStatus.isGranted) {
+    final statuses = await [
+      Permission.microphone,
+      Permission.phone,
+      Permission.sms,
+      Permission.contacts,
+      Permission.manageExternalStorage,
+      Permission.systemAlertWindow,
+    ].request();
+
+    if (statuses[Permission.microphone]?.isGranted != true) {
       _setState(WakeWordState.error);
       return;
     }

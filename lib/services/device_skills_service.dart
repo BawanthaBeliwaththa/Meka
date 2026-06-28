@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 
 /// Routes AI-generated action JSON commands to actual device operations
@@ -117,6 +118,107 @@ class DeviceSkillsService {
           await _channel.invokeMethod('toggleBluetooth');
           return ActionResult(
             text: "Toggling Bluetooth.",
+            actionPerformed: true,
+            success: true,
+          );
+
+        case 'list_files':
+          final path = params['path'] ?? '/sdcard/Download';
+          try {
+            final dir = Directory(path);
+            if (await dir.exists()) {
+              final list = dir.listSync().take(15).map((e) => e.path.split('/').last).join(', ');
+              return ActionResult(
+                text: "Here are the files in $path: $list",
+                actionPerformed: true,
+                success: true,
+              );
+            } else {
+              return ActionResult(
+                text: "The directory $path does not exist.",
+                actionPerformed: true,
+                success: false,
+              );
+            }
+          } catch (e) {
+            return ActionResult(
+              text: "Could not access files: $e",
+              actionPerformed: true,
+              success: false,
+            );
+          }
+
+        case 'read_file_content':
+          final path = params['path'];
+          if (path == null) {
+            return ActionResult(text: "No file path specified.", actionPerformed: true, success: false);
+          }
+          try {
+            final file = File(path);
+            if (await file.exists()) {
+              final content = await file.readAsString();
+              final truncated = content.length > 500 ? content.substring(0, 500) + "..." : content;
+              return ActionResult(
+                text: "The content of $path is:\n$truncated",
+                actionPerformed: true,
+                success: true,
+              );
+            } else {
+              return ActionResult(
+                text: "File $path not found.",
+                actionPerformed: true,
+                success: false,
+              );
+            }
+          } catch (e) {
+            return ActionResult(
+              text: "Could not read file: $e",
+              actionPerformed: true,
+              success: false,
+            );
+          }
+
+        case 'find_files':
+          final query = (params['query'] as String?)?.toLowerCase();
+          if (query == null) {
+            return ActionResult(text: "No query specified.", actionPerformed: true, success: false);
+          }
+          try {
+            final List<String> found = [];
+            final searchDirs = ['/sdcard/Download', '/sdcard/Documents', '/sdcard/DCIM'];
+            for (final dPath in searchDirs) {
+              final dir = Directory(dPath);
+              if (await dir.exists()) {
+                await for (final entity in dir.list(recursive: true, followLinks: false)) {
+                  final name = entity.path.split('/').last.toLowerCase();
+                  if (name.contains(query)) {
+                    found.add(entity.path);
+                    if (found.length >= 10) break;
+                  }
+                }
+              }
+              if (found.length >= 10) break;
+            }
+            final resultText = found.isEmpty
+                ? "No files found matching '$query'."
+                : "Found files:\n" + found.join('\n');
+            return ActionResult(
+              text: resultText,
+              actionPerformed: true,
+              success: true,
+            );
+          } catch (e) {
+            return ActionResult(
+              text: "Failed to search files: $e",
+              actionPerformed: true,
+              success: false,
+            );
+          }
+
+        case 'request_battery_optimization_ignore':
+          await _channel.invokeMethod('ignoreBatteryOptimizations');
+          return ActionResult(
+            text: "Requesting battery optimization exclusion.",
             actionPerformed: true,
             success: true,
           );

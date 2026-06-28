@@ -61,6 +61,9 @@ class MainActivity : FlutterActivity() {
                 "openSettings" -> {
                     openSystemSettings(result)
                 }
+                "ignoreBatteryOptimizations" -> {
+                    ignoreBatteryOptimizations(result)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -234,6 +237,23 @@ class MainActivity : FlutterActivity() {
             result.success(true)
         } catch (e: Exception) {
             result.error("SETTINGS_ERROR", e.message, null)
+        }
+    }
+
+    private fun ignoreBatteryOptimizations(result: MethodChannel.Result) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+                result.success(true)
+            } else {
+                result.success(false)
+            }
+        } catch (e: Exception) {
+            result.error("BATTERY_ERROR", e.message, null)
         }
     }
 }

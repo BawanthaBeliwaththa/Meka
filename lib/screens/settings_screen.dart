@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             letterSpacing: 3,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white54),
+        iconTheme: const IconThemeData(color: Colors.white.withOpacity(0.54)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),
@@ -99,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             suffix: IconButton(
               icon: Icon(
                 _keyVisible ? Icons.visibility_off : Icons.visibility,
-                color: Colors.white38,
+                color: Colors.white.withOpacity(0.38),
                 size: 20,
               ),
               onPressed: () => setState(() => _keyVisible = !_keyVisible),
@@ -151,19 +151,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
         color: Colors.white.withOpacity(0.04),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: GoogleFonts.inter(color: Colors.white87, fontSize: 15),
+        style: GoogleFonts.inter(color: Colors.white.withOpacity(0.87), fontSize: 15),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          hintStyle: GoogleFonts.inter(color: Colors.white24),
-          labelStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 13),
-          prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+          hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.24)),
+          labelStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.38), fontSize: 13),
+          prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.38), size: 20),
           suffixIcon: suffix,
           border: InputBorder.none,
           contentPadding:
@@ -191,7 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               text,
               style: GoogleFonts.inter(
-                color: Colors.white60,
+                color: Colors.white.withOpacity(0.60),
                 fontSize: 13,
                 height: 1.5,
               ),

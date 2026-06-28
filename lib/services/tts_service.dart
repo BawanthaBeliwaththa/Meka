@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
@@ -42,7 +43,7 @@ class TtsService {
     await _tts.stop();
   }
 
-  void onComplete(VoidCallback callback) {
+  void onComplete(void Function() callback) {
     _tts.setCompletionHandler(callback);
   }
 }

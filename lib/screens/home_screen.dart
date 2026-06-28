@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               // Clear history
               IconButton(
-                icon: const Icon(Icons.history, color: Colors.white54),
+                icon: const Icon(Icons.history, color: Colors.white.withOpacity(0.54)),
                 onPressed: () {
                   setState(() {
                     _bubbles.clear();
@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               // Settings
               IconButton(
-                icon: const Icon(Icons.settings_outlined, color: Colors.white54),
+                icon: const Icon(Icons.settings_outlined, color: Colors.white.withOpacity(0.54)),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -323,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen>
         '"$_transcript"',
         style: GoogleFonts.inter(
           fontSize: 13,
-          color: Colors.white38,
+          color: Colors.white.withOpacity(0.38),
           fontStyle: FontStyle.italic,
         ),
         textAlign: TextAlign.center,
@@ -339,13 +339,13 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.waving_hand, color: Colors.white12, size: 48),
+            const Icon(Icons.waving_hand, color: Colors.white.withOpacity(0.12), size: 48),
             const SizedBox(height: 12),
             Text(
               'Tap the orb or say\n"Hey Meka" to start',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.white24,
+                color: Colors.white.withOpacity(0.24),
               ),
               textAlign: TextAlign.center,
             ),
@@ -387,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen>
           bubble.text,
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: Colors.white87,
+            color: Colors.white.withOpacity(0.87),
             height: 1.5,
           ),
         ),

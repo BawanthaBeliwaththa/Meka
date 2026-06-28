@@ -120,7 +120,7 @@ class _SetupScreenState extends State<SetupScreen>
           'Your personal AI assistant.\nAlways listening. Always ready.\nJust for you.',
           style: GoogleFonts.inter(
             fontSize: 16,
-            color: Colors.white54,
+            color: Colors.white.withOpacity(0.54),
             height: 1.7,
           ),
         ),
@@ -129,7 +129,7 @@ class _SetupScreenState extends State<SetupScreen>
           'What should I call you?',
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: Colors.white38,
+            color: Colors.white.withOpacity(0.38),
             letterSpacing: 1,
           ),
         ),
@@ -137,7 +137,7 @@ class _SetupScreenState extends State<SetupScreen>
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
             color: Colors.white.withOpacity(0.05),
           ),
           child: TextField(
@@ -146,10 +146,10 @@ class _SetupScreenState extends State<SetupScreen>
             style: GoogleFonts.inter(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
               hintText: 'Your name...',
-              hintStyle: GoogleFonts.inter(color: Colors.white24),
+              hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.24)),
               border: InputBorder.none,
               prefixIcon:
-                  const Icon(Icons.person_outline, color: Colors.white38),
+                  const Icon(Icons.person_outline, color: Colors.white.withOpacity(0.38)),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
@@ -184,7 +184,7 @@ class _SetupScreenState extends State<SetupScreen>
           'Meka uses Google Gemini AI to understand you. Get a free API key at:',
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: Colors.white54,
+            color: Colors.white.withOpacity(0.54),
             height: 1.6,
           ),
         ),
@@ -197,7 +197,7 @@ class _SetupScreenState extends State<SetupScreen>
           ),
           child: Text(
             'aistudio.google.com',
-            style: GoogleFonts.mono(
+            style: GoogleFonts.robotoMono(
               fontSize: 13,
               color: const Color(0xFF00D4FF),
             ),
@@ -207,23 +207,23 @@ class _SetupScreenState extends State<SetupScreen>
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
             color: Colors.white.withOpacity(0.05),
           ),
           child: TextField(
             controller: _keyController,
             obscureText: !_keyVisible,
-            style: GoogleFonts.mono(color: Colors.white, fontSize: 14),
+            style: GoogleFonts.robotoMono(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Paste your Gemini API key here...',
-              hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
+              hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.24), fontSize: 13),
               border: InputBorder.none,
               prefixIcon:
-                  const Icon(Icons.vpn_key_outlined, color: Colors.white38),
+                  const Icon(Icons.vpn_key_outlined, color: Colors.white.withOpacity(0.38)),
               suffixIcon: IconButton(
                 icon: Icon(
                   _keyVisible ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.white38,
+                  color: Colors.white.withOpacity(0.38),
                   size: 20,
                 ),
                 onPressed: () => setState(() => _keyVisible = !_keyVisible),
@@ -236,7 +236,7 @@ class _SetupScreenState extends State<SetupScreen>
         const SizedBox(height: 12),
         Text(
           'No key? Tap "Skip" — you can add it later in Settings.',
-          style: GoogleFonts.inter(fontSize: 12, color: Colors.white30),
+          style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withOpacity(0.30)),
         ),
         const Spacer(),
         _buildNextButton(
@@ -250,7 +250,7 @@ class _SetupScreenState extends State<SetupScreen>
             onPressed: _loading ? null : _finish,
             child: Text(
               'Skip for now',
-              style: GoogleFonts.inter(color: Colors.white30, fontSize: 13),
+              style: GoogleFonts.inter(color: Colors.white.withOpacity(0.30), fontSize: 13),
             ),
           ),
         ),
@@ -272,7 +272,7 @@ class _SetupScreenState extends State<SetupScreen>
                   colors: [Color(0xFF6C63FF), Color(0xFF00D4FF)],
                 )
               : null,
-          color: primary || onTap != null ? null : Colors.white12,
+          color: primary || onTap != null ? null : Colors.white.withOpacity(0.12),
           boxShadow: primary || onTap != null
               ? [
                   BoxShadow(

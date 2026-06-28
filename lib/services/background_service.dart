@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -46,8 +47,8 @@ class MekaBackgroundService {
     await _service.startService();
   }
 
-  static Future<void> stop() async {
-    await _service.invoke('stop');
+  static void stop() {
+    _instance?.invoke('stop');
   }
 
   static ServiceInstance? _instance;

@@ -13,10 +13,20 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.os.Bundle
+import android.view.WindowManager
+import android.view.View
+import android.graphics.PixelFormat
+import android.view.Gravity
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.animation.ValueAnimator
 import java.util.Calendar
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.meka.assistant/device"
+    private var windowManager: WindowManager? = null
+    private var siriWaveView: SiriWaveView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,9 +38,9 @@ class MainActivity : FlutterActivity() {
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
-                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
             )
         }
     }
@@ -81,6 +91,12 @@ class MainActivity : FlutterActivity() {
                 }
                 "ignoreBatteryOptimizations" -> {
                     ignoreBatteryOptimizations(result)
+                }
+                "showOverlay" -> {
+                    showSystemOverlay(result)
+                }
+                "hideOverlay" -> {
+                    hideSystemOverlay(result)
                 }
                 else -> result.notImplemented()
             }
@@ -272,6 +288,116 @@ class MainActivity : FlutterActivity() {
             }
         } catch (e: Exception) {
             result.error("BATTERY_ERROR", e.message, null)
+        }
+    }
+
+    private fun showSystemOverlay(result: MethodChannel.Result) {
+        runOnUiThread {
+            try {
+                if (windowManager == null) {
+                    windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                }
+                if (siriWaveView != null) {
+                    result.success(true)
+                    return@runOnUiThread
+                }
+
+                // Standard density height calculation (110dp equivalent in pixels)
+                val density = resources.displayMetrics.density
+                val overlayHeight = (110 * density).toInt()
+
+                val layoutParams = WindowManager.LayoutParams().apply {
+                    width = WindowManager.LayoutParams.MATCH_PARENT
+                    height = overlayHeight
+                    type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    } else {
+                        @Suppress("DEPRECATION")
+                        WindowManager.LayoutParams.TYPE_PHONE
+                    }
+                    flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                    format = PixelFormat.TRANSLUCENT
+                    gravity = Gravity.BOTTOM
+                }
+
+                siriWaveView = SiriWaveView(this)
+                windowManager?.addView(siriWaveView, layoutParams)
+                result.success(true)
+            } catch (e: Exception) {
+                result.error("OVERLAY_ERROR", e.message, null)
+            }
+        }
+    }
+
+    private fun hideSystemOverlay(result: MethodChannel.Result) {
+        runOnUiThread {
+            try {
+                if (siriWaveView != null) {
+                    windowManager?.removeView(siriWaveView)
+                    siriWaveView = null
+                    result.success(true)
+                } else {
+                    result.success(false)
+                }
+            } catch (e: Exception) {
+                result.error("OVERLAY_ERROR", e.message, null)
+            }
+        }
+    }
+}
+
+class SiriWaveView(context: Context) : View(context) {
+    private val paint = Paint().apply {
+        style = Paint.Style.FILL
+        isAntiAlias = true
+    }
+    private var phase = 0f
+    private val animator = ValueAnimator.ofFloat(0f, 2f * Math.PI.toFloat()).apply {
+        duration = 1100
+        repeatCount = ValueAnimator.INFINITE
+        addUpdateListener {
+            phase = it.animatedValue as Float
+            invalidate()
+        }
+    }
+
+    init {
+        animator.start()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val centerY = height / 2f
+        val w = width.toFloat()
+
+        // Multi-colored semi-transparent waves overlapping
+        val waves = listOf(
+            Triple(0.6f, 2.8f, 0x4000D4FF.toInt()), // Cyan
+            Triple(0.45f, 4.0f, 0x407C4DFF.toInt()), // Purple
+            Triple(0.5f, 2.0f, 0x40FF007F.toInt()), // Magenta
+            Triple(0.3f, 4.8f, 0x4000E676.toInt())  // Green
+        )
+
+        for (wave in waves) {
+            val amp = wave.first
+            val freq = wave.second
+            val color = wave.third
+
+            paint.color = color
+            val path = Path()
+            path.moveTo(0f, centerY)
+
+            for (x in 0..width step 4) {
+                val envelope = Math.sin((x.toDouble() / w) * Math.PI).toFloat()
+                val y = centerY + Math.sin(x.toDouble() * (freq / w) * 2 * Math.PI + phase).toFloat() * (height * 0.45f * amp) * envelope
+                path.lineTo(x.toFloat(), y)
+            }
+            path.lineTo(w, height.toFloat())
+            path.lineTo(0f, height.toFloat())
+            path.close()
+            canvas.drawPath(path, paint)
         }
     }
 }

@@ -110,19 +110,33 @@ jobs:
                 inject += '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />\n'
             if inject:
                 c = c.replace('<application', inject + '<application', 1)
-                with open(manifest, 'w') as f: f.write(c)
+            
+            # Inject BootReceiver declaration inside <application>
+            receiver_xml = """
+        <receiver android:name=".BootReceiver" android:enabled="true" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+            """
+            if 'BootReceiver' not in c:
+                c = c.replace('</application>', receiver_xml + '\n    </application>', 1)
+                
+            with open(manifest, 'w') as f: f.write(c)
             print("Manifest patched")
 
         print("Android config patched successfully")
         PYEOF
 
-    - name: Inject MainActivity.kt
+    - name: Inject Custom Native Code
       if: matrix.target == 'android'
       run: |
         DEST="android/app/src/main/kotlin/com/example/meka"
         mkdir -p "$DEST"
         cp android_src/MainActivity.kt "$DEST/MainActivity.kt"
-        echo "MainActivity.kt injected"
+        cp android_src/BootReceiver.kt "$DEST/BootReceiver.kt"
+        echo "Native files injected"
       shell: bash
 
     - name: Install dependencies

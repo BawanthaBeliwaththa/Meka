@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -183,9 +184,8 @@ class WakeWordService {
     _setState(WakeWordState.processing);
     _transcriptCtrl.add('Verifying voice print...');
 
-    // 1. Verify speaker pitch
     final double pitch = _calculateFundamentalFrequency(bytes);
-    final bool isUser = bypassVoiceVerification || await _voiceAuth.verifySpeaker(pitch);
+    final bool isUser = await _voiceAuth.verifySpeaker(pitch);
 
     if (!isUser) {
       _transcriptCtrl.add('Voice print verification failed.');
@@ -333,6 +333,13 @@ class WakeWordService {
   void _setState(WakeWordState s) {
     _state = s;
     _stateCtrl.add(s);
+    try {
+      if (s == WakeWordState.listening) {
+        const MethodChannel('com.meka.assistant/device').invokeMethod('showOverlay');
+      } else {
+        const MethodChannel('com.meka.assistant/device').invokeMethod('hideOverlay');
+      }
+    } catch (_) {}
   }
 
   WakeWordState get currentState => _state;

@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   String get _statusText {
     switch (_state) {
-      case WakeWordState.idle: return 'STANDBY — SAY "HEY MEKA"';
+      case WakeWordState.idle: return 'ONLINE — ALWAYS READY';
       case WakeWordState.listening: return 'LISTENING';
       case WakeWordState.processing: return 'PROCESSING';
       case WakeWordState.speaking: return 'RESPONDING';
@@ -152,14 +152,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 // Status + transcript
                 _buildStatusBar(),
-                // Slide-up conversation panel
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeInOutCubic,
-                  height: _panelOpen ? 260 : 60,
-                  child: _buildConversationPanel(),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -305,12 +298,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Center(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
-              child: Icon(
-                _stateIcon,
-                key: ValueKey(_state),
-                color: Colors.white,
-                size: 44,
-              ),
+              child: _state == WakeWordState.idle
+                  ? ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Icon(
+                      _stateIcon,
+                      key: ValueKey(_state),
+                      color: Colors.white,
+                      size: 44,
+                    ),
             ),
           ),
         ),

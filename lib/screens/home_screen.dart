@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       setState(() => _state = s);
       if (s == WakeWordState.listening) {
-        _waveCtrl.repeat(reverse: true);
+        _waveCtrl.repeat();
       } else {
         _waveCtrl.stop();
         _waveCtrl.reset();
@@ -163,6 +163,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
+
+          // Siri-style overlay at bottom
+          if (_state == WakeWordState.listening)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 110,
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _waveCtrl,
+                  builder: (_, __) => CustomPaint(
+                    size: const Size(double.infinity, 110),
+                    painter: _SiriWavePainter(_waveCtrl.value, _primaryColor),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -549,4 +567,50 @@ class _RingsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingsPainter old) => old.t != t || old.color != color;
+}
+
+class _SiriWavePainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+  _SiriWavePainter(this.animationValue, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    final centerY = size.height / 2;
+    final width = size.width;
+
+    final waves = [
+      (0.6, 2.8, 0.5, const Color(0xFF00D4FF)),
+      (0.45, 4.0, 0.8, const Color(0xFF7C4DFF)),
+      (0.5, 2.0, -0.4, const Color(0xFFFF007F)),
+      (0.3, 4.8, 1.3, const Color(0xFF00E676)),
+    ];
+
+    for (final (amp, freq, speed, wColor) in waves) {
+      final path = Path();
+      path.moveTo(0, centerY);
+
+      final phase = animationValue * 2 * pi * speed;
+      for (double x = 0; x <= width; x += 4) {
+        final double envelope = sin((x / width) * pi);
+        final double y = centerY +
+            sin(x * (freq / width) * 2 * pi + phase) *
+                (size.height * 0.40 * amp) *
+                envelope;
+        path.lineTo(x, y);
+      }
+
+      path.lineTo(width, size.height);
+      path.lineTo(0, size.height);
+      path.close();
+
+      paint.color = wColor.withOpacity(0.25);
+      paint.blendMode = BlendMode.screen;
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SiriWavePainter old) => old.animationValue != animationValue;
 }

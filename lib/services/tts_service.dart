@@ -9,22 +9,43 @@ class TtsService {
   final FlutterTts _tts = FlutterTts();
   bool _initialized = false;
 
-  Future<void> _init() async {
-    if (_initialized) return;
-    await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.52);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+  Future<void> _init(String text) async {
+    // Detect if text contains Sinhala Unicode characters (range 0D80 to 0DFF)
+    final bool isSinhala = RegExp(r'[\u0D80-\u0DFF]').hasMatch(text);
 
-    // Try to pick a natural-sounding voice
+    if (isSinhala) {
+      await _tts.setLanguage('si-LK');
+    } else {
+      // Try Sri Lankan English (en-LK) first, default to English US
+      await _tts.setLanguage('en-LK');
+    }
+
+    await _tts.setSpeechRate(0.50);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.08); // slightly elevated pitch for a clearer female tone
+
+    // Try to pick a natural-sounding female voice for the chosen locale
     final voices = await _tts.getVoices;
     if (voices != null) {
       final voiceList = List<Map>.from(voices);
+      final String currentLocale = isSinhala ? 'si-lk' : 'en-lk';
+      
       final preferred = voiceList.firstWhere(
-        (v) => (v['name'] as String).toLowerCase().contains('female') ||
-               (v['name'] as String).toLowerCase().contains('samantha') ||
-               (v['name'] as String).toLowerCase().contains('karen'),
-        orElse: () => voiceList.isNotEmpty ? voiceList.first : {},
+        (v) {
+          final name = (v['name'] as String).toLowerCase();
+          final locale = (v['locale'] as String).toLowerCase();
+          final matchLocale = locale.contains(currentLocale);
+          // Look for female voice identifiers in the speech engine configuration
+          final matchFemale = name.contains('female') || name.contains('zari') || name.contains('samantha') || name.contains('local') || name.contains('network');
+          return matchLocale && matchFemale;
+        },
+        orElse: () => voiceList.firstWhere(
+          (v) => (v['locale'] as String).toLowerCase().contains(currentLocale),
+          orElse: () => voiceList.firstWhere(
+            (v) => (v['name'] as String).toLowerCase().contains('female'),
+            orElse: () => voiceList.isNotEmpty ? voiceList.first : {},
+          ),
+        ),
       );
       if (preferred.isNotEmpty) {
         await _tts.setVoice({'name': preferred['name'], 'locale': preferred['locale']});
@@ -34,7 +55,7 @@ class TtsService {
   }
 
   Future<void> speak(String text) async {
-    await _init();
+    await _init(text);
     await _tts.stop();
     await _tts.speak(text);
   }

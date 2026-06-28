@@ -40,6 +40,7 @@ class WakeWordService {
 
   static const List<String> _wakeWords = [
     'hey meka', 'hi meka', 'ok meka', 'okay meka', 'meka',
+    'හේ මේකා', 'හයි මේකා', 'මේකා', 'මෙක්කා', 'හේ මෙකා', 'හේමේකා'
   ];
 
   Future<void> start() async {
@@ -106,6 +107,9 @@ class WakeWordService {
 
     try {
       _isSpeechListening = true;
+      final systemLocale = await _speech.systemLocale();
+      final locale = systemLocale?.localeId ?? 'en_US';
+
       await _speech.listen(
         onResult: (result) {
           final words = result.recognizedWords.toLowerCase();
@@ -113,12 +117,12 @@ class WakeWordService {
             _transcriptCtrl.add(words);
           }
           if (_wakeWords.any((w) => words.contains(w))) {
-            _speech.stop().then((_) => _processCommand());
+            _speech.cancel().then((_) => _processCommand());
           }
         },
         listenFor: const Duration(seconds: 10),
         pauseFor: const Duration(seconds: 3),
-        localeId: 'en_US',
+        localeId: locale,
         listenMode: stt.ListenMode.confirmation,
         cancelOnError: false,
       );

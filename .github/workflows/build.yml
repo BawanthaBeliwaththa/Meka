@@ -1,0 +1,124 @@
+name: Build Meka
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            output_name: Meka-Linux
+            build_command: flutter build linux --release
+            artifact_path: build/linux/x64/release/bundle/
+          - os: ubuntu-latest
+            target: android
+            output_name: Meka-Android.apk
+            build_command: flutter build apk --release
+            artifact_path: build/app/outputs/flutter-apk/app-release.apk
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Java (for Android)
+      if: matrix.target == 'android'
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.6'
+        channel: 'stable'
+
+    - name: Install Linux Dependencies
+      if: matrix.target == 'linux'
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libasound2-dev libpulse-dev
+
+    - name: Generate Platforms
+      run: flutter create --platforms=${{ matrix.target }} --project-name=meka .
+
+    - name: Fix Android Build Config
+      if: matrix.target == 'android'
+      run: |
+        python3 << 'EOF'
+        import os, re
+
+        def rw(path, fn):
+            if os.path.exists(path):
+                with open(path, 'r') as f: c = f.read()
+                c = fn(c)
+                with open(path, 'w') as f: f.write(c)
+
+        # Kotlin + AGP versions
+        rw('android/build.gradle', lambda c: re.sub(
+            r'ext\.kotlin_version\s*=\s*["\'].*?["\']',
+            'ext.kotlin_version = "1.9.22"', c))
+        rw('android/build.gradle', lambda c: re.sub(
+            r'classpath\s+"com\.android\.tools\.build:gradle:.*?"',
+            'classpath "com.android.tools.build:gradle:7.4.2"', c))
+
+        # Settings plugins (Kotlin DSL style)
+        rw('android/settings.gradle', lambda c: re.sub(
+            r'id\s+"org\.jetbrains\.kotlin\.android"\s+version\s+".*?"',
+            'id "org.jetbrains.kotlin.android" version "1.9.22"', c))
+        rw('android/settings.gradle', lambda c: re.sub(
+            r'id\s+"com\.android\.application"\s+version\s+".*?"',
+            'id "com.android.application" version "7.4.2"', c))
+
+        # App build.gradle — SDK versions
+        rw('android/app/build.gradle', lambda c: re.sub(
+            r'flutter\.minSdkVersion', '24', c))
+        rw('android/app/build.gradle', lambda c: re.sub(
+            r'flutter\.compileSdkVersion', '34', c))
+        rw('android/app/build.gradle', lambda c: re.sub(
+            r'flutter\.targetSdkVersion', '34', c))
+
+        # Permissions in AndroidManifest
+        manifest = 'android/app/src/main/AndroidManifest.xml'
+        if os.path.exists(manifest):
+            with open(manifest, 'r') as f: c = f.read()
+            perms = [
+                'android.permission.RECORD_AUDIO',
+                'android.permission.INTERNET',
+                'android.permission.RECEIVE_BOOT_COMPLETED',
+                'android.permission.FOREGROUND_SERVICE',
+                'android.permission.FOREGROUND_SERVICE_MICROPHONE',
+                'android.permission.POST_NOTIFICATIONS',
+                'android.permission.CALL_PHONE',
+                'android.permission.SEND_SMS',
+                'android.permission.READ_CONTACTS',
+            ]
+            inject = ''
+            for p in perms:
+                if p not in c:
+                    inject += f'    <uses-permission android:name="{p}" />\n'
+            if inject:
+                c = c.replace('<application', inject + '<application', 1)
+                with open(manifest, 'w') as f: f.write(c)
+
+        print("Android config patched successfully")
+        EOF
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Build
+      run: ${{ matrix.build_command }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.output_name }}
+        path: ${{ matrix.artifact_path }}

@@ -1,0 +1,52 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+*.iml
+*.ipr
+*.iws
+.idea/
+build/
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+pubspec.lock
+
+# Android binaries — never commit these
+Android/
+*.apk
+*.aab
+*.dex
+
+# Linux binaries — never commit these
+Linux/
+
+# iOS/macOS binaries
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Web
+lib/generated_plugin_registrant.dart
+
+# Visual Studio Code
+.vscode/
+
+# IntelliJ IDEA
+out/
+
+# Gradle
+.gradle/
+/build
+
+# Key stores
+*.jks
+*.keystore

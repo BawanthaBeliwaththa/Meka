@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -109,6 +110,57 @@ Current date: ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
         final reply =
             data['candidates'][0]['content']['parts'][0]['text'] as String;
         _history.add(Message(role: 'model', text: reply));
+        return reply;
+      } else {
+        final err = jsonDecode(response.body);
+        return "I'm experiencing interference, $_userName. ${err['error']?['message'] ?? 'Please try again.'}";
+      }
+    } catch (e) {
+      return "Connection lost, $_userName. Check your network and try again.";
+    }
+  }
+
+  Future<String> chatWithAudio(Uint8List wavBytes) async {
+    if (_apiKey.isEmpty) {
+      return "I need my intelligence module configured, $_userName. Please add a Gemini API key in Settings.";
+    }
+
+    final base64Audio = base64Encode(wavBytes);
+
+    final contents = [
+      {
+        'role': 'user',
+        'parts': [
+          {'text': _systemPrompt},
+          {
+            'inlineData': {
+              'mimeType': 'audio/wav',
+              'data': base64Audio
+            }
+          },
+          {'text': 'Listen to the audio user command, transcribe it, and fulfill it.'}
+        ]
+      }
+    ];
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_url?key=$_apiKey'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'contents': contents}),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final reply =
+            data['candidates'][0]['content']['parts'][0]['text'] as String;
+        
+        _history.add(Message(role: 'user', text: '[Spoken voice command]'));
+        _history.add(Message(role: 'model', text: reply));
+        if (_history.length > 40) _history.removeAt(0);
+        
         return reply;
       } else {
         final err = jsonDecode(response.body);

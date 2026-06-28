@@ -23,7 +23,7 @@ class _SetupScreenState extends State<SetupScreen>
   late Animation<double> _fade;
 
   final VoiceAuthService _voice = VoiceAuthService();
-  final List<int> _durations = [];
+  final List<double> _pitches = [];
   bool _isRecording = false;
   String _voiceStatus = 'Press the button and say "Hey Meka" clearly';
 
@@ -61,26 +61,49 @@ class _SetupScreenState extends State<SetupScreen>
     if (_isRecording) return;
     setState(() {
       _isRecording = true;
-      _voiceStatus = 'Recording sample ${_durations.length + 1}/${_voice.requiredSamples}... speak now';
+      _voiceStatus = 'Listening... Speak "Hey Meka" now.';
     });
-    final dur = await _voice.recordSample(_durations.length);
-    _durations.add(dur);
-    if (_durations.length >= _voice.requiredSamples) {
-      await _voice.completeEnrollment(_durations);
+
+    try {
+      final sampleIndex = _pitches.length;
+      await _voice.startRecording(sampleIndex);
+      
+      // Let the user speak for 3 seconds
+      await Future.delayed(const Duration(seconds: 3));
+      
+      final pitch = await _voice.stopAndAnalyze(sampleIndex);
+
+      if (pitch <= 50.0 || pitch >= 350.0) {
+        setState(() {
+          _isRecording = false;
+          _voiceStatus = 'No voice detected or too much noise. Please try again.';
+        });
+        return;
+      }
+
+      _pitches.add(pitch);
+
+      if (_pitches.length >= _voice.requiredSamples) {
+        await _voice.completeEnrollment(_pitches);
+        setState(() {
+          _isRecording = false;
+          _voiceStatus = 'Voice calibration complete. Pitch analyzed at ${pitch.toStringAsFixed(0)} Hz.';
+        });
+      } else {
+        setState(() {
+          _isRecording = false;
+          _voiceStatus = 'Sample ${_pitches.length} recorded (${pitch.toStringAsFixed(0)} Hz). ${_voice.requiredSamples - _pitches.length} more needed.';
+        });
+      }
+    } catch (_) {
       setState(() {
         _isRecording = false;
-        _voiceStatus = 'Voice enrolled. Meka will only respond to you.';
-      });
-    } else {
-      setState(() {
-        _isRecording = false;
-        _voiceStatus =
-            'Sample ${_durations.length} recorded. ${_voice.requiredSamples - _durations.length} more needed.';
+        _voiceStatus = 'An error occurred. Please try again.';
       });
     }
   }
 
-  bool get _voiceDone => _durations.length >= _voice.requiredSamples;
+  bool get _voiceDone => _pitches.length >= _voice.requiredSamples;
 
   @override
   Widget build(BuildContext context) {
@@ -257,20 +280,20 @@ class _SetupScreenState extends State<SetupScreen>
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: i < _durations.length
+                  color: i < _pitches.length
                       ? const Color(0xFF00E676).withOpacity(0.2)
                       : Colors.white.withOpacity(0.05),
                   border: Border.all(
-                    color: i < _durations.length
+                    color: i < _pitches.length
                         ? const Color(0xFF00E676)
-                        : i == _durations.length && _isRecording
+                        : i == _pitches.length && _isRecording
                             ? const Color(0xFF00D4FF)
                             : Colors.white.withOpacity(0.15),
                     width: 1.5,
                   ),
                 ),
                 child: Center(
-                  child: i < _durations.length
+                  child: i < _pitches.length
                       ? const Icon(Icons.check, color: Color(0xFF00E676), size: 18)
                       : _isRecording && i == _durations.length
                           ? const SizedBox(

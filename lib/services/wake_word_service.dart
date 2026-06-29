@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
@@ -59,6 +60,12 @@ class WakeWordService {
     if (statuses[Permission.microphone]?.isGranted != true) {
       _setState(WakeWordState.error);
       return;
+    }
+
+    if (statuses[Permission.systemAlertWindow]?.isGranted != true) {
+      try {
+        await const MethodChannel('com.meka.assistant/device').invokeMethod('requestOverlayPermission');
+      } catch (_) {}
     }
 
     await WakelockPlus.enable();
@@ -164,8 +171,33 @@ class WakeWordService {
       );
     }
 
-    // Record for up to 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
+    // Dynamic silence detection loop (polls amplitude every 150ms)
+    int silenceTicks = 0;
+    const int checkIntervalMs = 150;
+    const int maxRecordTimeMs = 5000;
+    const int minRecordTimeMs = 800;
+    int elapsedMs = 0;
+
+    while (elapsedMs < maxRecordTimeMs && _active) {
+      await Future.delayed(const Duration(milliseconds: checkIntervalMs));
+      elapsedMs += checkIntervalMs;
+
+      try {
+        final amp = await _commandRecorder.getAmplitude();
+        if (amp.current < -38.0) {
+          silenceTicks++;
+        } else {
+          silenceTicks = 0;
+        }
+      } catch (_) {
+        silenceTicks++;
+      }
+
+      if (elapsedMs >= minRecordTimeMs && silenceTicks >= 5) {
+        break;
+      }
+    }
+
     await _commandRecorder.stop();
 
     if (!await file.exists()) {
@@ -184,7 +216,7 @@ class WakeWordService {
     _setState(WakeWordState.processing);
     _transcriptCtrl.add('Verifying voice print...');
 
-    final double pitch = _calculateFundamentalFrequency(bytes);
+    final double pitch = await compute(_calculateFundamentalFrequencyIsolate, bytes);
     final bool isUser = await _voiceAuth.verifySpeaker(pitch);
 
     if (!isUser) {
@@ -221,71 +253,7 @@ class WakeWordService {
     if (_active) _listenLoop();
   }
 
-  /// Autocorrelation pitch algorithm
-  double _calculateFundamentalFrequency(Uint8List bytes) {
-    final buffer = bytes.buffer.asByteData();
-    final samples = Int16List(bytes.length ~/ 2);
-    for (int i = 0; i < samples.length; i++) {
-      samples[i] = buffer.getInt16(i * 2, Endian.little);
-    }
 
-    const int sampleRate = 16000;
-    const int minFreq = 75;
-    const int maxFreq = 300;
-    const int minPeriod = sampleRate ~/ maxFreq;
-    const int maxPeriod = sampleRate ~/ minFreq;
-
-    int windowSize = 2000;
-    if (samples.length < windowSize) {
-      windowSize = samples.length;
-    }
-
-    int bestStartIndex = 0;
-    double maxRms = 0.0;
-    for (int i = 0; i < samples.length - windowSize; i += 500) {
-      double sumSq = 0;
-      for (int j = 0; j < windowSize; j++) {
-        final s = samples[i + j].toDouble();
-        sumSq += s * s;
-      }
-      final rms = double.parse((sumSq / windowSize).toString());
-      if (rms > maxRms) {
-        maxRms = rms;
-        bestStartIndex = i;
-      }
-    }
-
-    double maxCorrelation = -1.0;
-    int bestPeriod = -1;
-
-    for (int period = minPeriod; period <= maxPeriod; period++) {
-      double sum = 0.0;
-      double sumSq1 = 0.0;
-      double sumSq2 = 0.0;
-
-      for (int i = 0; i < windowSize - period; i++) {
-        final double s1 = samples[bestStartIndex + i].toDouble();
-        final double s2 = samples[bestStartIndex + i + period].toDouble();
-        sum += s1 * s2;
-        sumSq1 += s1 * s1;
-        sumSq2 += s2 * s2;
-      }
-
-      if (sumSq1 > 0 && sumSq2 > 0) {
-        final double correlation = sum / sqrt(sumSq1 * sumSq2);
-        if (correlation > maxCorrelation) {
-          maxCorrelation = correlation;
-          bestPeriod = period;
-        }
-      }
-    }
-
-    if (bestPeriod != -1 && maxCorrelation > 0.65) {
-      return sampleRate / bestPeriod;
-    }
-
-    return 0.0;
-  }
 
   Uint8List _addWavHeader(Uint8List pcmBytes, int sampleRate) {
     final int fileSize = pcmBytes.length + 36;
@@ -349,4 +317,70 @@ class WakeWordService {
     _transcriptCtrl.close();
     _responseCtrl.close();
   }
+}
+
+/// Autocorrelation pitch algorithm run in separate background isolate for performance
+double _calculateFundamentalFrequencyIsolate(Uint8List bytes) {
+  final buffer = bytes.buffer.asByteData();
+  final samples = Int16List(bytes.length ~/ 2);
+  for (int i = 0; i < samples.length; i++) {
+    samples[i] = buffer.getInt16(i * 2, Endian.little);
+  }
+
+  const int sampleRate = 16000;
+  const int minFreq = 75;
+  const int maxFreq = 300;
+  const int minPeriod = sampleRate ~/ maxFreq;
+  const int maxPeriod = sampleRate ~/ minFreq;
+
+  int windowSize = 2000;
+  if (samples.length < windowSize) {
+    windowSize = samples.length;
+  }
+
+  int bestStartIndex = 0;
+  double maxRms = 0.0;
+  for (int i = 0; i < samples.length - windowSize; i += 500) {
+    double sumSq = 0;
+    for (int j = 0; j < windowSize; j++) {
+      final s = samples[i + j].toDouble();
+      sumSq += s * s;
+    }
+    final rms = sumSq / windowSize;
+    if (rms > maxRms) {
+      maxRms = rms;
+      bestStartIndex = i;
+    }
+  }
+
+  double maxCorrelation = -1.0;
+  int bestPeriod = -1;
+
+  for (int period = minPeriod; period <= maxPeriod; period++) {
+    double sum = 0.0;
+    double sumSq1 = 0.0;
+    double sumSq2 = 0.0;
+
+    for (int i = 0; i < windowSize - period; i++) {
+      final double s1 = samples[bestStartIndex + i].toDouble();
+      final double s2 = samples[bestStartIndex + i + period].toDouble();
+      sum += s1 * s2;
+      sumSq1 += s1 * s1;
+      sumSq2 += s2 * s2;
+    }
+
+    if (sumSq1 > 0 && sumSq2 > 0) {
+      final double correlation = sum / sqrt(sumSq1 * sumSq2);
+      if (correlation > maxCorrelation) {
+        maxCorrelation = correlation;
+        bestPeriod = period;
+      }
+    }
+  }
+
+  if (bestPeriod != -1 && maxCorrelation > 0.65) {
+    return sampleRate / bestPeriod;
+  }
+
+  return 0.0;
 }

@@ -30,6 +30,8 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Waking and showing on lockscreen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -42,6 +44,18 @@ class MainActivity : FlutterActivity() {
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
                 WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
             )
+        }
+
+        // Start Meka Background Foreground Service
+        try {
+            val serviceIntent = Intent(this, MekaForegroundService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -91,6 +105,9 @@ class MainActivity : FlutterActivity() {
                 }
                 "ignoreBatteryOptimizations" -> {
                     ignoreBatteryOptimizations(result)
+                }
+                "requestOverlayPermission" -> {
+                    requestOverlayPermission(result)
                 }
                 "showOverlay" -> {
                     showSystemOverlay(result)
@@ -291,6 +308,22 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun requestOverlayPermission(result: MethodChannel.Result) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+                result.success(true)
+            } else {
+                result.success(false)
+            }
+        } catch (e: Exception) {
+            result.error("OVERLAY_PERMISSION_ERROR", e.message, null)
+        }
+    }
+
     private fun showSystemOverlay(result: MethodChannel.Result) {
         runOnUiThread {
             try {
@@ -302,7 +335,6 @@ class MainActivity : FlutterActivity() {
                     return@runOnUiThread
                 }
 
-                // Standard density height calculation (110dp equivalent in pixels)
                 val density = resources.displayMetrics.density
                 val overlayHeight = (110 * density).toInt()
 
@@ -372,7 +404,6 @@ class SiriWaveView(context: Context) : View(context) {
         val centerY = height / 2f
         val w = width.toFloat()
 
-        // Multi-colored semi-transparent waves overlapping
         val waves = listOf(
             Triple(0.6f, 2.8f, 0x4000D4FF.toInt()), // Cyan
             Triple(0.45f, 4.0f, 0x407C4DFF.toInt()), // Purple

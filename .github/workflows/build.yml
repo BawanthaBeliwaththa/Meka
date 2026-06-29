@@ -122,6 +122,13 @@ jobs:
             """
             if 'BootReceiver' not in c:
                 c = c.replace('</application>', receiver_xml + '\n    </application>', 1)
+
+            # Inject Foreground Service declaration inside <application>
+            service_xml = """
+        <service android:name=".MekaForegroundService" android:foregroundServiceType="microphone" android:exported="false" />
+            """
+            if 'MekaForegroundService' not in c:
+                c = c.replace('</application>', service_xml + '\n    </application>', 1)
                 
             with open(manifest, 'w') as f: f.write(c)
             print("Manifest patched")
@@ -136,7 +143,20 @@ jobs:
         mkdir -p "$DEST"
         cp android_src/MainActivity.kt "$DEST/MainActivity.kt"
         cp android_src/BootReceiver.kt "$DEST/BootReceiver.kt"
+        cp android_src/MekaForegroundService.kt "$DEST/MekaForegroundService.kt"
         echo "Native files injected"
+      shell: bash
+
+    - name: Inject Custom App Icons
+      if: matrix.target == 'android'
+      run: |
+        RES="android/app/src/main/res"
+        for dir in "$RES"/mipmap-*; do
+          if [ -d "$dir" ]; then
+            cp assets/images/logo.png "$dir/ic_launcher.png"
+            echo "Icon copied to $dir"
+          fi
+        done
       shell: bash
 
     - name: Install dependencies

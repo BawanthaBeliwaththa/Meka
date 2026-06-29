@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
 
 class MekaForegroundService : Service() {
     private val CHANNEL_ID = "MekaForegroundServiceChannel"
@@ -17,15 +16,19 @@ class MekaForegroundService : Service() {
         super.onCreate()
         createNotificationChannel()
         
-        // Use system default icon or voice icon
         val icon = android.R.drawable.ic_btn_speak_now
         
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+        
+        val notification = builder
             .setContentTitle("Meka Personal Intelligence")
             .setContentText("Always active. Listening for 'Hey Meka'...")
             .setSmallIcon(icon)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
             
         startForeground(1, notification)

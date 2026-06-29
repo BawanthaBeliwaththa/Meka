@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:record/record.dart';
@@ -20,6 +21,7 @@ class WakeWordService {
   factory WakeWordService() => _instance;
   WakeWordService._internal();
 
+  final stt.SpeechToText _speech = stt.SpeechToText();
   final AudioRecorder _commandRecorder = AudioRecorder();
   final TtsService _tts = TtsService();
   final LlmService _llm = LlmService();
@@ -35,6 +37,13 @@ class WakeWordService {
 
   WakeWordState _state = WakeWordState.idle;
   bool _active = false;
+  bool _sttReady = false;
+  bool _isSpeechListening = false;
+
+  static const List<String> _wakeWords = [
+    'hey meka', 'hi meka', 'ok meka', 'okay meka', 'meka',
+    'හේ මේකා', 'හයි මේකා', 'මේකා', 'මෙක්කා', 'හේ මෙකා', 'හේමේකා'
+  ];
 
   Future<void> start() async {
     if (_active) return;
@@ -60,29 +69,87 @@ class WakeWordService {
     }
 
     await WakelockPlus.enable();
+
+    _sttReady = await _speech.initialize(
+      onStatus: (status) {
+        if (status == 'listening') {
+          _isSpeechListening = true;
+        } else if (status == 'done' || status == 'notListening') {
+          _isSpeechListening = false;
+          if (_active && _state == WakeWordState.idle) {
+            Future.delayed(const Duration(milliseconds: 300), _listenLoop);
+          }
+        }
+      },
+      onError: (error) {
+        _isSpeechListening = false;
+        if (_active && _state == WakeWordState.idle) {
+          Future.delayed(const Duration(seconds: 2), _listenLoop);
+        }
+      },
+    );
+
+    if (!_sttReady) {
+      _setState(WakeWordState.error);
+      return;
+    }
+
     await _llm.loadSettings();
     _active = true;
     _setState(WakeWordState.idle);
-    _processCommand(playChime: true);
+    _listenLoop();
   }
 
   void stop() {
     _active = false;
+    _speech.stop();
     _commandRecorder.stop();
     _tts.stop();
     WakelockPlus.disable();
     _setState(WakeWordState.idle);
   }
 
-  Future<void> _processCommand({bool playChime = false}) async {
+  Future<void> _listenLoop() async {
+    if (!_active || _state != WakeWordState.idle || !_sttReady) return;
+    if (_isSpeechListening) return;
+
+    try {
+      _isSpeechListening = true;
+      final systemLocale = await _speech.systemLocale();
+      final locale = systemLocale?.localeId ?? 'en_US';
+
+      await _speech.listen(
+        onResult: (result) {
+          final words = result.recognizedWords.toLowerCase();
+          if (words.isNotEmpty) {
+            _transcriptCtrl.add(words);
+          }
+          if (_wakeWords.any((w) => words.contains(w))) {
+            _speech.cancel().then((_) => _processCommand());
+          }
+        },
+        listenFor: const Duration(seconds: 10),
+        pauseFor: const Duration(seconds: 3),
+        localeId: locale,
+        listenMode: stt.ListenMode.confirmation,
+        cancelOnError: false,
+      );
+    } catch (_) {
+      _isSpeechListening = false;
+      if (_active) {
+        await Future.delayed(const Duration(seconds: 2));
+        _listenLoop();
+      }
+    }
+  }
+
+  Future<void> _processCommand() async {
     if (!_active) return;
     _setState(WakeWordState.listening);
 
-    if (playChime) {
-      // Audio chime to indicate listening
-      await _tts.speak('Mm?');
-      await Future.delayed(const Duration(milliseconds: 700));
-    }
+    // Audio chime to indicate listening
+    await _tts.speak('Mm?');
+    await Future.delayed(const Duration(milliseconds: 700));
 
     final dir = await getApplicationDocumentsDirectory();
     final pcmPath = '${dir.path}/current_command.raw';
@@ -135,14 +202,14 @@ class WakeWordService {
 
     if (!await file.exists()) {
       _setState(WakeWordState.idle);
-      if (_active) _processCommand(playChime: false);
+      if (_active) _listenLoop();
       return;
     }
 
     final bytes = await file.readAsBytes();
     if (bytes.length < 2000) {
       _setState(WakeWordState.idle);
-      if (_active) _processCommand(playChime: false);
+      if (_active) _listenLoop();
       return;
     }
 
@@ -158,7 +225,7 @@ class WakeWordService {
       await _tts.speak('Voice print mismatch.');
       await Future.delayed(const Duration(seconds: 2));
       _setState(WakeWordState.idle);
-      if (_active) _processCommand(playChime: false);
+      if (_active) _listenLoop();
       return;
     }
 
@@ -183,7 +250,7 @@ class WakeWordService {
 
     await Future.delayed(const Duration(milliseconds: 600));
     _setState(WakeWordState.idle);
-    if (_active) _processCommand(playChime: false);
+    if (_active) _listenLoop();
   }
 
 
@@ -227,9 +294,8 @@ class WakeWordService {
 
   Future<void> triggerManually() async {
     if (_state == WakeWordState.speaking || _state == WakeWordState.processing) return;
-    _commandRecorder.stop().then((_) {
-      _processCommand(playChime: true);
-    });
+    if (_isSpeechListening) await _speech.stop();
+    _processCommand();
   }
 
   void _setState(WakeWordState s) {

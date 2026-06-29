@@ -227,8 +227,9 @@ class WakeWordService {
 
   Future<void> triggerManually() async {
     if (_state == WakeWordState.speaking || _state == WakeWordState.processing) return;
-    if (_isSpeechListening) await _speech.stop();
-    _processCommand(bypassVoiceVerification: true);
+    _commandRecorder.stop().then((_) {
+      _processCommand(playChime: true);
+    });
   }
 
   void _setState(WakeWordState s) {

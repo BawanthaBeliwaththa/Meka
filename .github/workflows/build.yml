@@ -148,20 +148,12 @@ jobs:
         echo "Native files injected"
       shell: bash
 
-    - name: Inject Custom App Icons
-      if: matrix.target == 'android'
-      run: |
-        RES="android/app/src/main/res"
-        for dir in "$RES"/mipmap-*; do
-          if [ -d "$dir" ]; then
-            cp assets/images/logo.png "$dir/ic_launcher.png"
-            echo "Icon copied to $dir"
-          fi
-        done
-      shell: bash
-
     - name: Install dependencies
       run: flutter pub get
+
+    - name: Generate App Icons
+      if: matrix.target == 'android'
+      run: dart run flutter_launcher_icons
 
     - name: Build
       run: ${{ matrix.build_command }}

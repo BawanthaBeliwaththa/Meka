@@ -42,6 +42,8 @@ class WakeWordService {
 
   static const List<String> _wakeWords = [
     'hey meka', 'hi meka', 'ok meka', 'okay meka', 'meka',
+    'hey maker', 'maker', 'mecca', 'hey mecca', 'mega', 'hey mega',
+    'meca', 'mika', 'hey mika', 'make it', 'mayca',
     'හේ මේකා', 'හයි මේකා', 'මේකා', 'මෙක්කා', 'හේ මෙකා', 'හේමේකා'
   ];
 
@@ -146,10 +148,6 @@ class WakeWordService {
   Future<void> _processCommand() async {
     if (!_active) return;
     _setState(WakeWordState.listening);
-
-    // Audio chime to indicate listening
-    await _tts.speak('Mm?');
-    await Future.delayed(const Duration(milliseconds: 700));
 
     final dir = await getApplicationDocumentsDirectory();
     final pcmPath = '${dir.path}/current_command.raw';

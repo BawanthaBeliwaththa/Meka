@@ -124,15 +124,19 @@ jobs:
             if 'BootReceiver' not in c:
                 c = c.replace('</application>', receiver_xml + '\n    </application>', 1)
 
-            # Inject Foreground Service declaration inside <application>
-            service_xml = """
-        <service android:name=".MekaForegroundService" android:foregroundServiceType="microphone" android:exported="false" />
-            """
-            if 'MekaForegroundService' not in c:
-                c = c.replace('</application>', service_xml + '\n    </application>', 1)
-                
-            with open(manifest, 'w') as f: f.write(c)
-            print("Manifest patched")
+             # Inject Foreground Service declaration inside <application>
+             service_xml = """
+        <service android:name=".MekaForegroundService" android:foregroundServiceType="microphone" android:exported="false" android:stopWithTask="false" />
+             """
+             if 'MekaForegroundService' not in c:
+                 c = c.replace('</application>', service_xml + '\n    </application>', 1)
+                 
+             # Exclude main activity from recents list to prevent swipe-kills
+             if 'android:excludeFromRecents="true"' not in c:
+                 c = c.replace('<activity', '<activity android:excludeFromRecents="true"', 1)
+                 
+             with open(manifest, 'w') as f: f.write(c)
+             print("Manifest patched")
 
         print("Android config patched successfully")
         PYEOF

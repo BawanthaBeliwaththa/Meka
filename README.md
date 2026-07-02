@@ -9,7 +9,9 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Gemini AI](https://img.shields.io/badge/Gemini_AI-Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
 [![Kotlin](https://img.shields.io/badge/Kotlin-Android-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![ESP32](https://img.shields.io/badge/ESP32-IoT%20Control-E7352C?logo=espressif&logoColor=white)](esp32/)
 [![License](https://img.shields.io/badge/License-MIT-00D4FF?logoColor=white)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/BawanthaBeliwaththa/Meka?color=00D4FF&label=Latest%20Release)](https://github.com/BawanthaBeliwaththa/Meka/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Linux-0F0F0F)](https://flutter.dev/multi-platform)
 [![Stars](https://img.shields.io/github/stars/BawanthaBeliwaththa/Meka?style=social)](https://github.com/BawanthaBeliwaththa/Meka/stargazers)
 
@@ -396,6 +398,71 @@ You are free to use, modify, and distribute Meka. Attribution appreciated but no
 - 🎨 **Flutter Team** — The cross-platform framework
 - 🎬 **Marvel / Iron Man** — Inspiration for the JARVIS-like personality
 - 🎵 **SiriWave** — Inspiration for the wave animation aesthetic
+- 🔌 **Espressif** — ESP32 microcontroller platform
+
+---
+
+## 🔌 ESP32 Hardware Integration
+
+> *Turn Meka into a full smart-home voice controller.*
+
+Meka can control an **ESP32 microcontroller** over your local WiFi network — giving you a real voice-controlled IoT hub. Flash the firmware, enter the IP in Settings, and start commanding your physical world.
+
+### Architecture
+```
+You say: "Hey Meka, turn on relay 1"
+         ↓
+   Gemini AI: {"action":"esp32_relay","channel":1,"state":"on"}
+         ↓
+   Meka Flutter App → HTTP POST http://meka.local/relay
+         ↓
+   ESP32 Board → GPIO 26 → Relay Module → Physical Load (Light, Motor, etc.)
+         ↓
+   Meka speaks: "Relay 1 is now on, Sir."
+```
+
+### Default Wiring (ESP32 38-pin DevKit)
+```
+GPIO  │ Connected To
+──────┼──────────────────────────
+  2   │ Built-in LED / PWM output
+  4   │ DHT22 temperature sensor
+ 13   │ NeoPixel RGB strip (Din)
+ 15   │ Buzzer
+ 18   │ Servo motor signal
+ 26   │ Relay channel 1
+ 27   │ Relay channel 2
+ 14   │ Relay channel 3
+ 12   │ Relay channel 4
+ 25   │ Relay channel 5
+ 33   │ Relay channel 6
+ 32   │ Relay channel 7
+ 19   │ Relay channel 8
+ 34   │ Analog input (ADC)
+```
+
+### Voice Commands
+| Say to Meka | What Happens |
+|---|---|
+| *"Turn on relay 1"* | Relay 1 switches ON |
+| *"Turn off relay 3"* | Relay 3 switches OFF |
+| *"Set LED to blue"* | NeoPixels turn blue |
+| *"Move servo to 90 degrees"* | Servo rotates to 90° |
+| *"What is the temperature?"* | Reads DHT22 & speaks result |
+| *"What is the humidity?"* | Reads DHT22 humidity |
+| *"Dim LED to 50 percent"* | NeoPixel brightness 50% |
+| *"Buzz the buzzer"* | Buzzer sounds 200ms |
+| *"Reset all outputs"* | All relays OFF, servo & LEDs reset |
+
+### Quick Setup
+1. Install libraries in Arduino IDE (see [`esp32/README.md`](esp32/README.md))
+2. Edit WiFi credentials in `esp32/meka_esp32/meka_esp32.ino`
+3. Flash to your ESP32 board
+4. Note the IP from Serial Monitor
+5. In Meka App → **Settings → ESP32 Hardware Node** → enter IP → **Test Connection**
+6. Start commanding your hardware!
+
+📖 **Full wiring diagrams & API docs:** [`esp32/README.md`](esp32/README.md)
 
 ---
 
@@ -411,4 +478,4 @@ Made with ❤️ by [Bawantha Beliwaththa](https://github.com/BawanthaBeliwathth
 
 ---
 
-<!-- SEO Keywords: android siri alternative, siri for android, ai personal assistant android open source, jarvis android app, google gemini voice assistant android, flutter voice assistant, android ai assistant app, hey siri android equivalent, android voice control app, ai assistant like siri for android, free siri alternative android, intelligent voice assistant android, gemini ai android app, android assistant wake word, siri wave android -->
+<!-- SEO Keywords: android siri alternative, siri for android, ai personal assistant android open source, jarvis android app, google gemini voice assistant android, flutter voice assistant, android ai assistant app, hey siri android equivalent, android voice control app, ai assistant like siri for android, free siri alternative android, intelligent voice assistant android, gemini ai android app, android assistant wake word, siri wave android, esp32 voice control, esp32 smart home voice assistant, iot voice control android, esp32 relay voice command, android ai iot controller, gemini esp32 integration, flutter esp32 smart home -->

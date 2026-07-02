@@ -1,0 +1,186 @@
+name: Release Meka
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+
+      - name: Generate Android platform files
+        run: flutter create --platforms=android --project-name=meka .
+
+      - name: Patch Android Build Config
+        run: |
+          python3 << 'PYEOF'
+          import os, re
+
+          def rw(path, fn):
+              if os.path.exists(path):
+                  with open(path, 'r') as f: c = f.read()
+                  nc = fn(c)
+                  with open(path, 'w') as f: f.write(nc)
+
+          # Kotlin + AGP versions
+          rw('android/build.gradle', lambda c: re.sub(
+              r'ext\.kotlin_version\s*=\s*["\'].*?["\']',
+              'ext.kotlin_version = "1.9.22"', c))
+          rw('android/build.gradle', lambda c: re.sub(
+              r'classpath\s+"com\.android\.tools\.build:gradle:.*?"',
+              'classpath "com.android.tools.build:gradle:7.4.2"', c))
+          rw('android/settings.gradle', lambda c: re.sub(
+              r'id\s+"org\.jetbrains\.kotlin\.android"\s+version\s+".*?"',
+              'id "org.jetbrains.kotlin.android" version "1.9.22"', c))
+          rw('android/settings.gradle', lambda c: re.sub(
+              r'id\s+"com\.android\.application"\s+version\s+".*?"',
+              'id "com.android.application" version "7.4.2"', c))
+
+          # SDK versions
+          rw('android/app/build.gradle', lambda c: re.sub(r'flutter\.minSdkVersion', '23', c))
+          rw('android/app/build.gradle', lambda c: re.sub(r'flutter\.compileSdkVersion', '34', c))
+          rw('android/app/build.gradle', lambda c: re.sub(r'flutter\.targetSdkVersion', '34', c))
+
+          # Permissions + Components
+          manifest = 'android/app/src/main/AndroidManifest.xml'
+          if os.path.exists(manifest):
+              with open(manifest, 'r') as f: c = f.read()
+              perms = [
+                  'android.permission.RECORD_AUDIO',
+                  'android.permission.INTERNET',
+                  'android.permission.RECEIVE_BOOT_COMPLETED',
+                  'android.permission.CALL_PHONE',
+                  'android.permission.SEND_SMS',
+                  'android.permission.READ_CONTACTS',
+                  'android.permission.WAKE_LOCK',
+                  'android.permission.FOREGROUND_SERVICE',
+                  'android.permission.SYSTEM_ALERT_WINDOW',
+                  'android.permission.QUERY_ALL_PACKAGES',
+                  'android.permission.MANAGE_EXTERNAL_STORAGE',
+                  'android.permission.FOREGROUND_SERVICE_MICROPHONE',
+                  'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+              ]
+              inject = ''
+              for p in perms:
+                  if p not in c:
+                      inject += f'    <uses-permission android:name="{p}" />\n'
+              if 'POST_NOTIFICATIONS' not in c:
+                  inject += '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />\n'
+              if inject:
+                  c = c.replace('<application', inject + '<application', 1)
+
+              receiver_xml = """
+          <receiver android:name=".BootReceiver" android:enabled="true" android:exported="true">
+              <intent-filter>
+                  <action android:name="android.intent.action.BOOT_COMPLETED" />
+                  <category android:name="android.intent.category.DEFAULT" />
+              </intent-filter>
+          </receiver>
+              """
+              if 'BootReceiver' not in c:
+                  c = c.replace('</application>', receiver_xml + '\n    </application>', 1)
+
+              service_xml = """
+          <service android:name=".MekaForegroundService" android:foregroundServiceType="microphone" android:exported="false" android:stopWithTask="false" />
+              """
+              if 'MekaForegroundService' not in c:
+                  c = c.replace('</application>', service_xml + '\n    </application>', 1)
+
+              if 'android:excludeFromRecents="true"' not in c:
+                  c = c.replace('<activity', '<activity android:excludeFromRecents="true"', 1)
+
+              with open(manifest, 'w') as f: f.write(c)
+
+          print("Android config patched successfully")
+          PYEOF
+
+      - name: Inject Native Kotlin Sources
+        run: |
+          DEST="android/app/src/main/kotlin/com/example/meka"
+          mkdir -p "$DEST"
+          cp android_src/MainActivity.kt "$DEST/MainActivity.kt"
+          cp android_src/BootReceiver.kt "$DEST/BootReceiver.kt"
+          cp android_src/MekaForegroundService.kt "$DEST/MekaForegroundService.kt"
+          echo "Native Kotlin files injected"
+        shell: bash
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Generate App Icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Rename APK with version tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          cp build/app/outputs/flutter-apk/app-release.apk "Meka-${TAG}.apk"
+          echo "APK_PATH=Meka-${TAG}.apk" >> $GITHUB_ENV
+          echo "APK_NAME=Meka-${TAG}.apk" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Meka ${{ github.ref_name }} — AI Personal Assistant"
+          body: |
+            ## 🤖 Meka ${{ github.ref_name }} — AI Personal Assistant for Android
+
+            > *The Android answer to Siri & JARVIS, powered by Google Gemini*
+
+            ### 📥 Installation
+            1. Download **`${{ env.APK_NAME }}`** below
+            2. On your Android device: **Settings → Security → Install unknown apps → Allow**
+            3. Install the APK
+            4. Launch Meka and follow the setup wizard
+            5. Enter your free [Gemini API key](https://aistudio.google.com/app/apikey)
+
+            ### ✨ What's in this release
+            - 🎙️ Wake word detection ("Hey Meka")
+            - 🧠 Google Gemini Flash AI with conversation memory
+            - 🌊 Siri-style animated wave overlay
+            - 📱 Deep Android device control (calls, SMS, alarms, volume, WiFi, BT)
+            - 🔌 **ESP32 hardware integration** — control physical pins via voice
+            - 🔁 Always-on foreground service with boot auto-start
+            - 📶 Offline mode — basic commands work without internet
+            - 🗂️ File system browsing by voice
+
+            ### 🔧 Requirements
+            - Android 6.0+ (API 23)
+            - Free [Google Gemini API key](https://aistudio.google.com/app/apikey)
+            - Microphone permission
+
+            ### 🔌 ESP32 Hardware (Optional)
+            Flash the firmware from the [`esp32/`](https://github.com/BawanthaBeliwaththa/Meka/tree/main/esp32) directory and configure the IP in Meka Settings to control physical hardware with your voice.
+
+            ---
+            *Built with Flutter · Powered by Google Gemini · Open Source MIT*
+          files: ${{ env.APK_PATH }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'esp32_service.dart';
 
 /// Routes AI-generated action JSON commands to actual device operations
 class DeviceSkillsService {
@@ -221,6 +222,129 @@ class DeviceSkillsService {
             text: "Requesting battery optimization exclusion.",
             actionPerformed: true,
             success: true,
+          );
+
+        // ── ESP32 Hardware Node ──────────────────────────────────
+        case 'esp32_relay':
+          final ch    = params['channel'] as int? ?? 1;
+          final state = params['state']   as String? ?? 'toggle';
+          final r = await Esp32Service().setRelay(ch, state);
+          return ActionResult(
+            text: r.success
+                ? "Relay $ch is now ${state == 'toggle' ? 'toggled' : state}, Sir."
+                : "Could not reach the ESP32 node. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
+          );
+
+        case 'esp32_pin':
+          final pin   = params['pin']   as int? ?? 2;
+          final state = params['state'] as String? ?? 'toggle';
+          final r = await Esp32Service().setPin(pin, state);
+          return ActionResult(
+            text: r.success
+                ? "GPIO pin $pin is now ${state}, Sir."
+                : "Couldn't control pin $pin. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
+          );
+
+        case 'esp32_pwm':
+          final pin  = params['pin']  as int? ?? 2;
+          final duty = params['duty'] as int? ?? 128;
+          final r = await Esp32Service().setPwm(pin, duty);
+          return ActionResult(
+            text: r.success
+                ? "PWM on pin $pin set to $duty, Sir."
+                : "PWM failed. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
+          );
+
+        case 'esp32_servo':
+          final angle = params['angle'] as int? ?? 90;
+          final r = await Esp32Service().setServo(angle);
+          return ActionResult(
+            text: r.success
+                ? "Servo moved to $angle degrees, Sir."
+                : "Servo error. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
+          );
+
+        case 'esp32_led':
+          final color      = params['color'] as String?;
+          final brightness = params['brightness'] as int?;
+          Esp32Result r;
+          if (color != null) {
+            final rgb = Esp32Service.colorNameToRgb(color);
+            r = await Esp32Service().setLed(
+                r: rgb['r']!, g: rgb['g']!, b: rgb['b']!);
+          } else if (brightness != null) {
+            r = await Esp32Service().setLed(brightness: brightness);
+          } else {
+            r = await Esp32Service().setLed(
+                r: params['r'] ?? 255,
+                g: params['g'] ?? 255,
+                b: params['b'] ?? 255);
+          }
+          return ActionResult(
+            text: r.success ? "LED updated, Sir." : "LED error. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
+          );
+
+        case 'esp32_buzzer':
+          final dur = params['duration_ms'] as int? ?? 200;
+          final r = await Esp32Service().buzz(dur);
+          return ActionResult(
+            text: r.success ? "Done, Sir." : "Buzzer error. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
+          );
+
+        case 'esp32_sensor':
+          final type = (params['type'] as String? ?? 'temperature').toLowerCase();
+          if (type == 'analog') {
+            final data = await Esp32Service().readAnalog();
+            if (data != null) {
+              return ActionResult(
+                text: "Analog reading: ${data['volts']} volts, Sir.",
+                actionPerformed: true,
+                success: true,
+              );
+            }
+          } else {
+            final data = await Esp32Service().readDht();
+            if (data != null) {
+              if (type == 'humidity') {
+                return ActionResult(
+                  text: "Current humidity is ${data['humidity']}%, Sir.",
+                  actionPerformed: true,
+                  success: true,
+                );
+              }
+              return ActionResult(
+                text: "Temperature is ${data['temperature_c']}°C, humidity ${data['humidity']}%, Sir.",
+                actionPerformed: true,
+                success: true,
+              );
+            }
+          }
+          return ActionResult(
+            text: "Could not read sensor. Check ESP32 connection and DHT22 wiring.",
+            actionPerformed: true,
+            success: false,
+          );
+
+        case 'esp32_reset':
+          final r = await Esp32Service().resetAll();
+          return ActionResult(
+            text: r.success
+                ? "All ESP32 outputs have been reset, Sir."
+                : "Reset failed. ${r.message}",
+            actionPerformed: true,
+            success: r.success,
           );
 
         default:

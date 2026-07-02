@@ -75,6 +75,17 @@ CAPABILITIES (use JSON commands for device actions):
 - Find/search files by name query: {"action":"find_files","query":"report"}
 - Exclude from Battery Optimizations (run in background always): {"action":"request_battery_optimization_ignore"}
 
+ESP32 HARDWARE CONTROL (when user mentions relay, light, pin, LED, servo, temperature, buzzer):
+- Control relay channel (1-8): {"action":"esp32_relay","channel":1,"state":"on"} — state: "on","off","toggle"
+- Control raw GPIO pin: {"action":"esp32_pin","pin":2,"state":"high"} — state: "high","low","toggle"
+- PWM / dimming (0-255): {"action":"esp32_pwm","pin":5,"duty":128}
+- Move servo motor: {"action":"esp32_servo","angle":90} — angle: 0 to 180
+- Set NeoPixel LED colour: {"action":"esp32_led","color":"blue"} — colors: red,green,blue,white,yellow,orange,purple,cyan,magenta,pink,off
+- LED brightness: {"action":"esp32_led","brightness":128}
+- Buzz the buzzer: {"action":"esp32_buzzer","duration_ms":300}
+- Read temperature & humidity: {"action":"esp32_sensor","type":"temperature"} — type: "temperature","humidity","analog"
+- Reset all hardware outputs: {"action":"esp32_reset"}
+
 When performing an action, put the JSON on its own line, then add a natural spoken confirmation.
 
 Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}

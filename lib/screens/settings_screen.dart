@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/llm_service.dart';
+import '../services/esp32_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -10,10 +11,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _nameCtrl = TextEditingController();
-  final _keyCtrl = TextEditingController();
-  bool _keyVisible = false;
-  bool _saving = false;
+  final _nameCtrl  = TextEditingController();
+  final _keyCtrl   = TextEditingController();
+  final _esp32Ctrl = TextEditingController();
+  bool _keyVisible  = false;
+  bool _saving      = false;
+  bool? _esp32Ok;   // null=untested, true=ok, false=fail
+  bool _esp32Testing = false;
 
   @override
   void initState() {
@@ -23,14 +27,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    _nameCtrl.text = prefs.getString('user_name') ?? '';
-    _keyCtrl.text = prefs.getString('gemini_api_key') ?? '';
+    _nameCtrl.text  = prefs.getString('user_name')       ?? '';
+    _keyCtrl.text   = prefs.getString('gemini_api_key')  ?? '';
+    _esp32Ctrl.text = prefs.getString('esp32_host')      ?? '';
   }
 
   Future<void> _save() async {
     setState(() => _saving = true);
     await LlmService().saveSettings(
         apiKey: _keyCtrl.text.trim(), userName: _nameCtrl.text.trim());
+    await Esp32Service().saveHost(_esp32Ctrl.text.trim());
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('setup_done', true);
     if (mounted) {
@@ -42,6 +48,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ));
     }
+  }
+
+  Future<void> _testEsp32() async {
+    setState(() { _esp32Testing = true; _esp32Ok = null; });
+    await Esp32Service().saveHost(_esp32Ctrl.text.trim());
+    final ok = await Esp32Service().testConnection();
+    if (mounted) setState(() { _esp32Ok = ok; _esp32Testing = false; });
   }
 
   @override
@@ -99,6 +112,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           _infoCard(
               'Meka can open apps, set alarms, send messages,\ncontrol volume, search the web, and more.'),
+          const SizedBox(height: 32),
+
+          // ── ESP32 Hardware Node ────────────────────────────────
+          _label('ESP32 HARDWARE NODE'),
+          const SizedBox(height: 8),
+          _infoCard(
+              'Connect Meka to an ESP32 board over WiFi to control\nrelays, servos, LEDs, and sensors with your voice.\nFlash firmware from the esp32/ directory first.'),
+          const SizedBox(height: 12),
+          _field(
+            ctrl: _esp32Ctrl,
+            label: 'ESP32 IP or mDNS',
+            icon: Icons.developer_board,
+            hint: '192.168.1.42  or  meka.local',
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: _esp32Testing ? null : _testEsp32,
+                  child: Container(
+                    height: 46,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF00D4FF).withOpacity(0.4)),
+                      color: const Color(0xFF00D4FF).withOpacity(0.07),
+                    ),
+                    child: Center(
+                      child: _esp32Testing
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(
+                                  color: Color(0xFF00D4FF), strokeWidth: 2))
+                          : Text('TEST CONNECTION',
+                              style: GoogleFonts.orbitron(
+                                  color: const Color(0xFF00D4FF),
+                                  fontSize: 11, letterSpacing: 2)),
+                    ),
+                  ),
+                ),
+              ),
+              if (_esp32Ok != null) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: (_esp32Ok! ? const Color(0xFF00E676) : const Color(0xFFFF1744))
+                        .withOpacity(0.15),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(_esp32Ok! ? Icons.check_circle : Icons.error,
+                          color: _esp32Ok! ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                          size: 16),
+                      const SizedBox(width: 6),
+                      Text(_esp32Ok! ? 'ONLINE' : 'OFFLINE',
+                          style: GoogleFonts.orbitron(
+                              color: _esp32Ok! ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                              fontSize: 10, letterSpacing: 2)),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 48),
           _saveBtn(),
         ],
@@ -197,6 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _keyCtrl.dispose();
+    _esp32Ctrl.dispose();
     super.dispose();
   }
 }

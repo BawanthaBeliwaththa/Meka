@@ -111,6 +111,99 @@ class WakeWordService {
     _setState(WakeWordState.idle);
   }
 
+  Future<bool> _isOnline() async {
+    try {
+      final result = await Socket.connect('8.8.8.8', 53, timeout: const Duration(seconds: 1));
+      await result.close();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _handleTrigger(String recognizedWords, String wakeWord) async {
+    await _speech.cancel();
+    
+    final online = await _isOnline();
+    if (online) {
+      _processCommand();
+    } else {
+      // Offline mode!
+      final triggerIndex = recognizedWords.indexOf(wakeWord);
+      final commandText = recognizedWords.substring(triggerIndex + wakeWord.length).trim();
+      
+      if (commandText.isNotEmpty) {
+        _executeOfflineCommandDirectly(commandText);
+      } else {
+        _processOfflineCommandWithListener();
+      }
+    }
+  }
+
+  Future<void> _executeOfflineCommandDirectly(String command) async {
+    _setState(WakeWordState.processing);
+    _transcriptCtrl.add('Offline Command: $command');
+    
+    final result = await DeviceSkillsService.handleOfflineCommand(command);
+    
+    _responseCtrl.add(result.text);
+    _setState(WakeWordState.speaking);
+    await _tts.speak(result.text);
+    
+    await Future.delayed(const Duration(milliseconds: 600));
+    _setState(WakeWordState.idle);
+    if (_active) _listenLoop();
+  }
+
+  Future<void> _processOfflineCommandWithListener() async {
+    _setState(WakeWordState.listening);
+    
+    // Audio chime to indicate listening offline
+    await _tts.speak('Mm?');
+    await Future.delayed(const Duration(milliseconds: 700));
+    
+    bool completed = false;
+    
+    // Safety timeout in case no speech is detected
+    Future.delayed(const Duration(seconds: 7), () {
+      if (!completed && _state == WakeWordState.listening) {
+        completed = true;
+        _setState(WakeWordState.idle);
+        if (_active) _listenLoop();
+      }
+    });
+
+    try {
+      _isSpeechListening = true;
+      final systemLocale = await _speech.systemLocale();
+      final locale = systemLocale?.localeId ?? 'en_US';
+      
+      await _speech.listen(
+        onResult: (result) async {
+          if (!completed && (result.finalResult || result.recognizedWords.trim().isNotEmpty)) {
+            final cmd = result.recognizedWords.trim();
+            if (cmd.isNotEmpty) {
+              completed = true;
+              await _speech.cancel();
+              _executeOfflineCommandDirectly(cmd);
+            }
+          }
+        },
+        listenFor: const Duration(seconds: 5),
+        pauseFor: const Duration(seconds: 2),
+        localeId: locale,
+        listenMode: stt.ListenMode.confirmation,
+        cancelOnError: true,
+      );
+    } catch (_) {
+      if (!completed) {
+        completed = true;
+        _setState(WakeWordState.idle);
+        if (_active) _listenLoop();
+      }
+    }
+  }
+
   Future<void> _listenLoop() async {
     if (!_active || _state != WakeWordState.idle || !_sttReady) return;
     if (_isSpeechListening) return;
@@ -126,8 +219,9 @@ class WakeWordService {
           if (words.isNotEmpty) {
             _transcriptCtrl.add(words);
           }
-          if (_wakeWords.any((w) => words.contains(w))) {
-            _speech.cancel().then((_) => _processCommand());
+          final wMatch = _wakeWords.firstWhere((w) => words.contains(w), orElse: () => '');
+          if (wMatch.isNotEmpty) {
+            _handleTrigger(words, wMatch);
           }
         },
         listenFor: const Duration(seconds: 10),

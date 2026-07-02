@@ -238,6 +238,83 @@ class DeviceSkillsService {
       );
     }
   }
+
+  static Future<ActionResult> handleOfflineCommand(String command) async {
+    final query = command.toLowerCase().trim();
+
+    // 1. Open App Skill
+    final openMatch = RegExp(r'(?:open|launch)\s+([a-zA-Z0-9\s]+)').firstMatch(query);
+    if (openMatch != null) {
+      final appName = openMatch.group(1)!.trim();
+      return _execute('open_app', {'app': appName});
+    }
+
+    // 2. Set Alarm Skill
+    final alarmMatch = RegExp(r'set\s+alarm\s+for\s+(\d+)(?::(\d+))?\s*(am|pm)?').firstMatch(query);
+    if (alarmMatch != null) {
+      int hour = int.parse(alarmMatch.group(1)!);
+      int minute = alarmMatch.group(2) != null ? int.parse(alarmMatch.group(2)!) : 0;
+      final amPm = alarmMatch.group(3);
+      if (amPm != null) {
+        if (amPm == 'pm' && hour < 12) hour += 12;
+        if (amPm == 'am' && hour == 12) hour = 0;
+      }
+      return _execute('set_alarm', {
+        'hour': hour,
+        'minute': minute,
+        'label': 'Offline Alarm',
+      });
+    }
+
+    // 3. Make Call Skill
+    final callMatch = RegExp(r'(?:call|dial)\s+([a-zA-Z0-9\s+]+)').firstMatch(query);
+    if (callMatch != null) {
+      final target = callMatch.group(1)!.trim();
+      return _execute('make_call', {'to': target});
+    }
+
+    // 4. Send SMS Skill
+    final smsMatch = RegExp(r'(?:send\s+message\s+to|message|sms)\s+([a-zA-Z0-9\s+]+)\s+(?:saying|texting)?\s*(.+)').firstMatch(query);
+    if (smsMatch != null) {
+      final to = smsMatch.group(1)!.trim();
+      final message = smsMatch.group(2)!.trim();
+      return _execute('send_sms', {'to': to, 'message': message});
+    }
+
+    // 5. Set Volume Skill
+    final volMatch = RegExp(r'set\s+volume\s+to\s+(\d+)').firstMatch(query);
+    if (volMatch != null) {
+      final level = int.parse(volMatch.group(1)!);
+      return _execute('set_volume', {'level': level});
+    }
+
+    // 6. Generic Offline Response
+    if (query.contains('hello') || query.contains('hi')) {
+      return ActionResult(
+        text: "Hello! I am Meka. I am offline, but I can still launch apps, set alarms, or make calls.",
+        actionPerformed: false,
+        success: true,
+      );
+    } else if (query.contains('who are you') || query.contains('your name')) {
+      return ActionResult(
+        text: "I am Meka, your personal offline assistant.",
+        actionPerformed: false,
+        success: true,
+      );
+    } else if (query.contains('how are you')) {
+      return ActionResult(
+        text: "I'm doing well, running completely locally on your system.",
+        actionPerformed: false,
+        success: true,
+      );
+    }
+
+    return ActionResult(
+      text: "I couldn't understand that command offline. You can say 'open contacts', 'set alarm for 7:30 am', 'call Mom', or 'set volume to 80'.",
+      actionPerformed: false,
+      success: false,
+    );
+  }
 }
 
 class ActionResult {

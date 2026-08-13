@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme applied to the Android Window as soon as the process has started.
+         This theme is visible to the user while the Flutter UI initializes.
+         After that, the theme fades out and the Flutter UI takes over.
+         Match this theme to the color of your normal theme,
+         and it will seamlessly transition to your Flutter application's theme. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <!-- Show a splash screen on the activity. Automatically removed when
+             the Flutter engine draws its first frame -->
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    <!-- Theme applied to the Android Window once your Flutter UI initializes.
+         As this window's background will be rendered by Flutter, it is not
+         important what color you choose for the initial window background color.
+         This isn't visible unless your Flutter UI doesn't cover the whole screen. -->
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

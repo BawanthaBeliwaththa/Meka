@@ -9,8 +9,8 @@
 .idea/
 build/
 **/build/
-Android/
-**/Android/
+# Note: Flutter platform folders (android/, linux/, windows/) are committed intentionally
+# Only exclude build outputs and binaries
 *.class
 *.log
 *.pyc

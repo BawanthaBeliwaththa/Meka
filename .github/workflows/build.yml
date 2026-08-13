@@ -37,39 +37,6 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-<<<<<<< HEAD
-      - name: Generate Fresh Android Project & Patch SDK
-        run: |
-          cd "./Android APP"
-          rm -rf android/
-          flutter create --platforms=android --project-name=meka .
-          flutter pub get
-          python3 -c "
-          import os, re
-          p = 'android/app/build.gradle'
-          if os.path.exists(p):
-              with open(p, 'r') as f: c = f.read()
-              c = re.sub(r'flutter\.minSdkVersion', '23', c)
-              c = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', c)
-              c = re.sub(r'JavaVersion\.VERSION_1_8', 'JavaVersion.VERSION_17', c)
-              if 'lint {' not in c and 'lintOptions' not in c:
-                  c = re.sub(r'android\s*\{', 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n', c)
-              with open(p, 'w') as f: f.write(c)
-          
-          # Patch package_info_plus build.gradle AFTER flutter pub get
-          pkg_gradle = os.path.expanduser('~/.pub-cache/hosted/pub.dev/package_info_plus-9.0.1/android/build.gradle')
-          if os.path.exists(pkg_gradle):
-              with open(pkg_gradle, 'r') as f: c = f.read()
-              if 'compileSdkVersion' not in c:
-                  c = re.sub(r'android\s*\{', 'android {\n    compileSdkVersion 34\n', c)
-              with open(pkg_gradle, 'w') as f: f.write(c)
-          "
-          flutter pub get
-      - name: Build APK
-        run: |
-          cd "./Android APP"
-          flutter build apk --release --no-tree-shake-icons
-=======
       - name: Set up Android SDK locals
         working-directory: ./Android APP
         run: |
@@ -87,7 +54,6 @@ jobs:
         run: flutter build apk --release --no-tree-shake-icons
 
   # ─── Windows App ────────────────────────────────────────────────────────────
->>>>>>> 3bbafac (fix: commit android/ platform folder, clean CI without flutter create hacks)
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
@@ -98,14 +64,6 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-<<<<<<< HEAD
-      - name: Generate Windows Platform & Build
-        run: |
-          cd "Windows APP"
-          if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
-          flutter config --enable-windows-desktop
-          flutter create --platforms=windows --project-name=meka_windows .
-=======
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
       - name: Create windows platform if missing
@@ -117,7 +75,6 @@ jobs:
       - name: Flutter pub get & build
         working-directory: "Windows APP"
         run: |
->>>>>>> 3bbafac (fix: commit android/ platform folder, clean CI without flutter create hacks)
           flutter pub get
           flutter build windows --release
 
@@ -141,14 +98,6 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-<<<<<<< HEAD
-      - name: Generate Linux Platform & Build
-        run: |
-          cd "./Linux APP"
-          rm -rf linux/
-          flutter config --enable-linux-desktop
-          flutter create --platforms=linux --project-name=meka_linux .
-=======
       - name: Enable Linux desktop
         run: flutter config --enable-linux-desktop
       - name: Create linux platform if missing
@@ -160,6 +109,5 @@ jobs:
       - name: Flutter pub get & build
         working-directory: "./Linux APP"
         run: |
->>>>>>> 3bbafac (fix: commit android/ platform folder, clean CI without flutter create hacks)
           flutter pub get
           flutter build linux --release

@@ -16,11 +16,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install & Build
+      - name: Install dependencies
         working-directory: ./Webapp
-        run: |
-          npm install
-          npm run build
+        run: npm install
+      - name: Build web application
+        working-directory: ./Webapp
+        run: npm run build
 
   # ─── Android APK ────────────────────────────────────────────────────────────
   build-android:
@@ -46,7 +47,7 @@ jobs:
       - name: Flutter pub get
         working-directory: ./Android APP
         run: flutter pub get
-      - name: Build APK
+      - name: Build APK Release
         working-directory: ./Android APP
         run: flutter build apk --release --no-tree-shake-icons
 
@@ -54,6 +55,9 @@ jobs:
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -61,13 +65,17 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Enable Windows desktop & build
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+      - name: Generate Windows platform files
         working-directory: ./Windows APP
-        run: |
-          flutter config --enable-windows-desktop
-          flutter create --platforms=windows .
-          flutter pub get
-          flutter build windows --release
+        run: flutter create --platforms=windows .
+      - name: Flutter pub get
+        working-directory: ./Windows APP
+        run: flutter pub get
+      - name: Build Windows executable
+        working-directory: ./Windows APP
+        run: flutter build windows --release
 
   # ─── Linux App ──────────────────────────────────────────────────────────────
   build-linux:
@@ -89,10 +97,14 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Enable Linux desktop & build
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+      - name: Generate Linux platform files
         working-directory: ./Linux APP
-        run: |
-          flutter config --enable-linux-desktop
-          flutter create --platforms=linux .
-          flutter pub get
-          flutter build linux --release
+        run: flutter create --platforms=linux .
+      - name: Flutter pub get
+        working-directory: ./Linux APP
+        run: flutter pub get
+      - name: Build Linux executable
+        working-directory: ./Linux APP
+        run: flutter build linux --release

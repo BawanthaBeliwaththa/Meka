@@ -101,6 +101,9 @@ jobs:
   build-windows:
     name: Build Windows Client
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
@@ -111,22 +114,29 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Enable Windows desktop & build
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Generate Windows platform files
         working-directory: ./Windows APP
-        run: |
-          flutter config --enable-windows-desktop
-          flutter create --platforms=windows .
-          flutter pub get
-          flutter build windows --release --build-number=${{ github.run_number }}
+        run: flutter create --platforms=windows .
+
+      - name: Flutter pub get
+        working-directory: ./Windows APP
+        run: flutter pub get
+
+      - name: Build Windows executable
+        working-directory: ./Windows APP
+        run: flutter build windows --release --build-number=${{ github.run_number }}
 
       - name: Create Portable ZIP
         run: |
-          $version = "${{ github.ref_name }}"
-          if (-not $version) { $version = "${{ github.event.inputs.version }}" }
-          $releaseDir = "Windows APP\build\windows\x64\runner\Release"
-          if (Test-Path $releaseDir) {
-            Compress-Archive -Path "$releaseDir\*" -DestinationPath "MEKA-${version}-Windows-Portable.zip"
-          }
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
+          RELEASE_DIR="Windows APP/build/windows/x64/runner/Release"
+          if [ -d "$RELEASE_DIR" ]; then
+            cd "$RELEASE_DIR"
+            zip -r "../../../../../MEKA-${VERSION}-Windows-Portable.zip" .
+          fi
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
@@ -158,12 +168,20 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Enable Linux desktop & build
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Generate Linux platform files
+        working-directory: ./Linux APP
+        run: flutter create --platforms=linux .
+
+      - name: Flutter pub get
+        working-directory: ./Linux APP
+        run: flutter pub get
+
+      - name: Build Linux executable
         working-directory: ./Linux APP
         run: |
-          flutter config --enable-linux-desktop
-          flutter create --platforms=linux .
-          flutter pub get
           VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
           VER="${VERSION#v}"
           flutter build linux --release \

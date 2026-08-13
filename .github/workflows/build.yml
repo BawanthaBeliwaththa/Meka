@@ -65,7 +65,7 @@ jobs:
         working-directory: ./Windows APP
         run: |
           flutter config --enable-windows-desktop
-          flutter create --platforms=windows --project-name=meka_windows .
+          flutter create --platforms=windows .
           flutter pub get
           flutter build windows --release
 
@@ -93,6 +93,6 @@ jobs:
         working-directory: ./Linux APP
         run: |
           flutter config --enable-linux-desktop
-          flutter create --platforms=linux --project-name=meka_linux .
+          flutter create --platforms=linux .
           flutter pub get
           flutter build linux --release

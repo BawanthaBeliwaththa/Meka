@@ -1,12 +1,12 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
     namespace "com.example.meka"
-    compileSdkVersion 34
+    compileSdk 34
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -20,20 +20,14 @@ android {
 
     defaultConfig {
         applicationId "com.example.meka"
-        minSdkVersion 23
-        targetSdkVersion 34
+        minSdk 23
+        targetSdk 34
         versionCode 1
         versionName "1.0.0"
         multiDexEnabled true
     }
 
     lint {
-        checkReleaseBuilds false
-        abortOnError false
-        disable 'InvalidPackage', 'Deprecation', 'OldTargetApi'
-    }
-
-    lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
@@ -48,7 +42,7 @@ android {
 }
 
 flutter {
-    source '../..'
+    source "../.."
 }
 
 dependencies {

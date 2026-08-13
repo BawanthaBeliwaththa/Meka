@@ -37,8 +37,8 @@ jobs:
           channel: 'stable'
           cache: true
       - name: Generate Fresh Android Project & Patch SDK
-        working-directory: ./Android APP
         run: |
+          cd "./Android APP"
           rm -rf android/
           flutter create --platforms=android --project-name=meka .
           python3 -c "
@@ -50,14 +50,14 @@ jobs:
               c = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', c)
               c = re.sub(r'JavaVersion\.VERSION_1_8', 'JavaVersion.VERSION_17', c)
               if 'lint {' not in c and 'lintOptions' not in c:
-                  c = re.sub(r'android\s*\{', 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }', c)
+                  c = re.sub(r'android\s*\{', 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n', c)
               with open(p, 'w') as f: f.write(c)
           "
           flutter pub get
       - name: Build APK
-        working-directory: ./Android APP
-        run: flutter build apk --release --no-tree-shake-icons -- -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease
-
+        run: |
+          cd "./Android APP"
+          flutter build apk --release --no-tree-shake-icons -- -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
@@ -70,8 +70,8 @@ jobs:
           channel: 'stable'
           cache: true
       - name: Generate Windows Platform & Build
-        working-directory: ./Windows APP
         run: |
+          cd "Windows APP"
           if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name=meka_windows .
@@ -97,8 +97,8 @@ jobs:
           channel: 'stable'
           cache: true
       - name: Generate Linux Platform & Build
-        working-directory: ./Linux APP
         run: |
+          cd "./Linux APP"
           rm -rf linux/
           flutter config --enable-linux-desktop
           flutter create --platforms=linux --project-name=meka_linux .

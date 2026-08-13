@@ -1,5 +1,5 @@
 name: meka_windows
-description: "MEKA — Desktop AI Assistant for Windows"
+description: MEKA Desktop AI Assistant for Windows
 publish_to: 'none'
 version: 3.0.0+1
 

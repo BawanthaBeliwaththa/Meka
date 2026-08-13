@@ -1,5 +1,5 @@
 name: meka_linux
-description: "MEKA — AI Personal Assistant & Smart Home Controller for Linux"
+description: MEKA Desktop AI Assistant for Linux
 publish_to: 'none'
 version: 3.0.0+1
 

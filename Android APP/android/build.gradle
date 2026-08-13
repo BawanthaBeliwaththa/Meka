@@ -13,11 +13,11 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
+subprojects { project ->
+    project.plugins.whenPluginAdded { plugin ->
+        if (plugin.class.name.startsWith('com.android.build.gradle.')) {
             project.android {
-                compileSdkVersion 34
+                compileSdk 34
             }
         }
     }

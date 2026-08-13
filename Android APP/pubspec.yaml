@@ -1,5 +1,5 @@
 name: meka
-description: Meka — Your personal AI assistant. Always listening, always ready.
+description: MEKA AI Personal Assistant and Smart Home Controller
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -41,7 +41,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true

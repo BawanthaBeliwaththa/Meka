@@ -5,14 +5,14 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyCTUV7fV0ObuQdKa9Tl1lycCRS-ltbvog0",
-  authDomain:        "sliot-80296.firebaseapp.com",
-  databaseURL:       "https://sliot-80296-default-rtdb.firebaseio.com",
-  projectId:         "sliot-80296",
-  storageBucket:     "sliot-80296.firebasestorage.app",
-  messagingSenderId: "742654983112",
-  appId:             "1:742654983112:web:5eb0dbcbdda53fea0b9efd",
-  measurementId:     "G-QWMGQ0J370"
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            || "YOUR_FIREBASE_API_KEY",
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN        || "your-app.firebaseapp.com",
+  databaseURL:       import.meta.env.VITE_FIREBASE_DATABASE_URL       || "https://your-app-default-rtdb.firebaseio.com",
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID         || "your-project-id",
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     || "your-app.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID             || "1:1234567890:web:abcdef",
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID     || ""
 };
 
 const app   = initializeApp(firebaseConfig);

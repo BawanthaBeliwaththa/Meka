@@ -32,15 +32,17 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install dependencies
+      - name: Generate Android Platform & Install dependencies
         working-directory: ./Android APP
-        run: flutter pub get
+        run: |
+          flutter create --platforms=android --project-name=meka_android .
+          flutter pub get
 
       - name: Build Universal & Split APKs
         working-directory: ./Android APP
         run: |
-          flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
-          flutter build apk --release --split-per-abi --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+          flutter build apk --release --no-tree-shake-icons --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+          flutter build apk --release --split-per-abi --no-tree-shake-icons --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
 
       - name: Prepare APK Artifacts
         run: |
@@ -71,9 +73,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install dependencies
+      - name: Generate Windows Platform & Install dependencies
         working-directory: ./Windows APP
-        run: flutter pub get
+        run: |
+          flutter create --platforms=windows --project-name=meka_windows .
+          flutter pub get
 
       - name: Build Windows Release
         working-directory: ./Windows APP
@@ -125,12 +129,11 @@ jobs:
 
       - name: Install System Dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y \
+          sudo apt-get update -qq || true
+          sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libayatana-appindicator3-dev libsecret-1-dev \
-            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            libsecret-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
             dpkg-dev fakeroot
 
       - name: Set up Flutter
@@ -140,12 +143,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Enable Linux Desktop
-        run: flutter config --enable-linux-desktop
-
-      - name: Install dependencies
+      - name: Enable Linux Desktop & Generate Platform
         working-directory: ./Linux APP
-        run: flutter pub get
+        run: |
+          flutter config --enable-linux-desktop
+          flutter create --platforms=linux --project-name=meka_linux .
+          flutter pub get
 
       - name: Build Linux Release
         working-directory: ./Linux APP

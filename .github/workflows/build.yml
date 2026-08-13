@@ -52,6 +52,14 @@ jobs:
               if 'lint {' not in c and 'lintOptions' not in c:
                   c = re.sub(r'android\s*\{', 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n', c)
               with open(p, 'w') as f: f.write(c)
+          
+          # Patch package_info_plus build.gradle
+          pkg_gradle = os.path.expanduser('~/.pub-cache/hosted/pub.dev/package_info_plus-9.0.1/android/build.gradle')
+          if os.path.exists(pkg_gradle):
+              with open(pkg_gradle, 'r') as f: c = f.read()
+              if 'compileSdkVersion' not in c:
+                  c = re.sub(r'android\s*\{', 'android {\n    compileSdkVersion 34\n', c)
+              with open(pkg_gradle, 'w') as f: f.write(c)
           "
           flutter pub get
       - name: Build APK

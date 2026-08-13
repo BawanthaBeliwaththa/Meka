@@ -61,13 +61,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install dependencies
-        working-directory: ./Android APP
-        run: flutter pub get
-
-      - name: Build Universal & Split APKs
+      - name: Install dependencies & Build APK
         working-directory: ./Android APP
         run: |
+          flutter pub get
           flutter build apk --release --no-tree-shake-icons --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
           flutter build apk --release --split-per-abi --no-tree-shake-icons --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
 
@@ -101,17 +98,13 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Windows Platform & Install dependencies
+      - name: Enable Windows Desktop & Build
         working-directory: ./Windows APP
         run: |
-          if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name=meka_windows .
           flutter pub get
-
-      - name: Build Windows Release
-        working-directory: ./Windows APP
-        run: flutter build windows --release --build-name=${{ github.ref_name }} --build-number=${{ github.run_number }}
+          flutter build windows --release --build-name=${{ github.ref_name }} --build-number=${{ github.run_number }}
 
       - name: Create Portable ZIP
         run: |
@@ -136,12 +129,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install System Dependencies
+      - name: Install System & Audio Audio Recording Dependencies
         run: |
           sudo apt-get update -qq || true
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev \
+            libpulse-dev libasound2-dev \
             dpkg-dev fakeroot
 
       - name: Set up Flutter
@@ -151,17 +145,13 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Enable Linux Desktop & Generate Platform
+      - name: Enable Linux Desktop & Build
         working-directory: ./Linux APP
         run: |
-          rm -rf linux/
           flutter config --enable-linux-desktop
           flutter create --platforms=linux --project-name=meka_linux .
           flutter pub get
-
-      - name: Build Linux Release
-        working-directory: ./Linux APP
-        run: flutter build linux --release --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+          flutter build linux --release --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
 
       - name: Package .deb and tar.gz
         run: |

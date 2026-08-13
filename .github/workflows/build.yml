@@ -36,17 +36,11 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Generate Android Platform & Set minSdk 23
+      - name: Install Dependencies & Build APK
         working-directory: ./Android APP
         run: |
-          rm -rf android/
-          flutter create --platforms=android --project-name=meka .
-          sed -i 's/flutter.minSdkVersion/23/g' android/app/build.gradle
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle || true
           flutter pub get
-      - name: Build APK
-        working-directory: ./Android APP
-        run: flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons
 
   build-windows:
     name: Build Windows App
@@ -59,16 +53,13 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Generate Windows Platform & Pub Get
+      - name: Generate Windows Platform & Build
         working-directory: ./Windows APP
         run: |
-          if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name=meka_windows .
           flutter pub get
-      - name: Build Windows
-        working-directory: ./Windows APP
-        run: flutter build windows --release
+          flutter build windows --release
 
   build-linux:
     name: Build Linux App
@@ -76,24 +67,22 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Install System Dependencies
+      - name: Install System & Audio Recording Dependencies
         run: |
           sudo apt-get update -qq || true
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev
+            libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev \
+            libpulse-dev libasound2-dev
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Generate Linux Platform & Pub Get
+      - name: Generate Linux Platform & Build
         working-directory: ./Linux APP
         run: |
-          rm -rf linux/
           flutter config --enable-linux-desktop
           flutter create --platforms=linux --project-name=meka_linux .
           flutter pub get
-      - name: Build Linux
-        working-directory: ./Linux APP
-        run: flutter build linux --release
+          flutter build linux --release

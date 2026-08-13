@@ -7,6 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # ─── Web App ────────────────────────────────────────────────────────────────
   build-webapp:
     name: Build Web App
     runs-on: ubuntu-latest
@@ -21,10 +22,10 @@ jobs:
           npm install
           npm run build
 
+  # ─── Android APK ────────────────────────────────────────────────────────────
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -36,6 +37,7 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
+<<<<<<< HEAD
       - name: Generate Fresh Android Project & Patch SDK
         run: |
           cd "./Android APP"
@@ -67,10 +69,28 @@ jobs:
         run: |
           cd "./Android APP"
           flutter build apk --release --no-tree-shake-icons
+=======
+      - name: Set up Android SDK locals
+        working-directory: ./Android APP
+        run: |
+          # Write local.properties so Gradle can find SDK & Flutter
+          echo "flutter.sdk=${FLUTTER_ROOT}" >> android/local.properties
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" >> android/local.properties
+      - name: Flutter pub get
+        working-directory: ./Android APP
+        run: flutter pub get
+      - name: Generate launcher icons
+        working-directory: ./Android APP
+        run: dart run flutter_launcher_icons || true
+      - name: Build APK
+        working-directory: ./Android APP
+        run: flutter build apk --release --no-tree-shake-icons
+
+  # ─── Windows App ────────────────────────────────────────────────────────────
+>>>>>>> 3bbafac (fix: commit android/ platform folder, clean CI without flutter create hacks)
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -78,38 +98,68 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
+<<<<<<< HEAD
       - name: Generate Windows Platform & Build
         run: |
           cd "Windows APP"
           if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name=meka_windows .
+=======
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+      - name: Create windows platform if missing
+        working-directory: "Windows APP"
+        run: |
+          if (-not (Test-Path "windows")) {
+            flutter create --platforms=windows --project-name=meka_windows .
+          }
+      - name: Flutter pub get & build
+        working-directory: "Windows APP"
+        run: |
+>>>>>>> 3bbafac (fix: commit android/ platform folder, clean CI without flutter create hacks)
           flutter pub get
           flutter build windows --release
 
+  # ─── Linux App ──────────────────────────────────────────────────────────────
   build-linux:
     name: Build Linux App
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Install System & Audio Recording Dependencies
+      - name: Install system dependencies
         run: |
-          sudo apt-get update -qq || true
+          sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev \
-            libpulse-dev libasound2-dev libspeechd-dev
+            libpulse-dev libasound2-dev libspeechd-dev \
+            libavcodec-dev libavformat-dev libavdevice-dev libswresample-dev \
+            ffmpeg portaudio19-dev pulseaudio-utils
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
+<<<<<<< HEAD
       - name: Generate Linux Platform & Build
         run: |
           cd "./Linux APP"
           rm -rf linux/
           flutter config --enable-linux-desktop
           flutter create --platforms=linux --project-name=meka_linux .
+=======
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+      - name: Create linux platform if missing
+        working-directory: "./Linux APP"
+        run: |
+          if [ ! -d "linux" ]; then
+            flutter create --platforms=linux --project-name=meka_linux .
+          fi
+      - name: Flutter pub get & build
+        working-directory: "./Linux APP"
+        run: |
+>>>>>>> 3bbafac (fix: commit android/ platform folder, clean CI without flutter create hacks)
           flutter pub get
           flutter build linux --release

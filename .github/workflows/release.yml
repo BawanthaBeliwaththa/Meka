@@ -1,26 +1,29 @@
-name: 🚀 Build & Release — MEKA Multi-Platform (Android, Windows, Linux, Web)
+name: 🚀 Build & Release — MEKA Multi-Platform
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v3.7.0)'
+        required: false
+        default: 'v0.0.0-manual'
 
 permissions:
   contents: write
 
 jobs:
-  # ── Web App & Cybernetic Dashboard Build ───────────────────────────────────
+  # ── Web App Build ────────────────────────────────────────────────────────────
   build-webapp:
     name: Build Cybernetic Web App
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -30,7 +33,8 @@ jobs:
           npm install
           npm run build
           cd dist
-          zip -r "../../MEKA-${GITHUB_REF_NAME}-Web-Dashboard.zip" .
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
+          zip -r "../../MEKA-${VERSION}-Web-Dashboard.zip" .
 
       - name: Upload Web Artifact
         uses: actions/upload-artifact@v4
@@ -38,57 +42,54 @@ jobs:
           name: webapp-build
           path: MEKA-*-Web-Dashboard.zip
 
-  # ── Android APK Build ───────────────────────────────────────────────────────
+  # ── Android APK Build ────────────────────────────────────────────────────────
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
     continue-on-error: true
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
-      - name: Generate Fresh Android Project & Patch SDK
+      - name: Set up Android SDK locals
         working-directory: ./Android APP
         run: |
-          rm -rf android/
-          flutter create --platforms=android --project-name=meka .
-          python3 -c "
-          import os, re
-          p = 'android/app/build.gradle'
-          if os.path.exists(p):
-              with open(p, 'r') as f: c = f.read()
-              c = re.sub(r'flutter\.minSdkVersion', '23', c)
-              c = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', c)
-              c = re.sub(r'JavaVersion\.VERSION_1_8', 'JavaVersion.VERSION_17', c)
-              if 'lint {' not in c and 'lintOptions' not in c:
-                  c = re.sub(r'android\s*\{', 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }', c)
-              with open(p, 'w') as f: f.write(c)
-          "
-          flutter pub get
+          echo "flutter.sdk=${FLUTTER_ROOT}" >> android/local.properties
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" >> android/local.properties
+
+      - name: Flutter pub get
+        working-directory: ./Android APP
+        run: flutter pub get
+      - name: Generate launcher icons
+        working-directory: ./Android APP
+        run: dart run flutter_launcher_icons || true
 
       - name: Build Universal & Split APKs
         working-directory: ./Android APP
         run: |
-          flutter build apk --release --no-tree-shake-icons --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }} -- -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease
-          flutter build apk --release --split-per-abi --no-tree-shake-icons --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }} -- -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
+          VER="${VERSION#v}"
+          flutter build apk --release --no-tree-shake-icons \
+            --build-name="${VER}" \
+            --build-number=${{ github.run_number }}
+          flutter build apk --release --split-per-abi --no-tree-shake-icons \
+            --build-name="${VER}" \
+            --build-number=${{ github.run_number }}
 
       - name: Prepare APK Artifacts
         run: |
-          VERSION=${GITHUB_REF_NAME}
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
           mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-${VERSION}-Android-Universal.apk" || true
           mv "Android APP/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "MEKA-${VERSION}-Android-arm64.apk" || true
           mv "Android APP/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "MEKA-${VERSION}-Android-arm32.apk" || true
@@ -99,89 +100,114 @@ jobs:
           name: android-builds
           path: MEKA-*-Android-*.apk
 
-  # ── Windows App Build ──────────────────────────────────────────────────────
+  # ── Windows App Build ─────────────────────────────────────────────────────────
   build-windows:
     name: Build Windows Client
     runs-on: windows-latest
     continue-on-error: true
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
-      - name: Enable Windows Desktop & Build
-        working-directory: ./Windows APP
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Create windows platform if missing
+        working-directory: "Windows APP"
         run: |
-          if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
-          flutter config --enable-windows-desktop
-          flutter create --platforms=windows --project-name=meka_windows .
+          if (-not (Test-Path "windows")) {
+            flutter create --platforms=windows --project-name=meka_windows .
+          }
+
+      - name: Flutter pub get & build
+        working-directory: "Windows APP"
+        run: |
           flutter pub get
-          flutter build windows --release --build-name=${{ github.ref_name }} --build-number=${{ github.run_number }}
+          $VERSION = "${{ github.ref_name }}"
+          if (-not $VERSION) { $VERSION = "${{ github.event.inputs.version }}" }
+          flutter build windows --release --build-number=${{ github.run_number }}
 
       - name: Create Portable ZIP
         run: |
           $version = "${{ github.ref_name }}"
-          if (Test-Path "Windows APP\build\windows\x64\runner\Release") {
-            Compress-Archive -Path "Windows APP\build\windows\x64\runner\Release\*" -DestinationPath "MEKA-${version}-Windows-Portable.zip"
+          if (-not $version) { $version = "${{ github.event.inputs.version }}" }
+          $releaseDir = "Windows APP\build\windows\x64\runner\Release"
+          if (Test-Path $releaseDir) {
+            Compress-Archive -Path "$releaseDir\*" -DestinationPath "MEKA-${version}-Windows-Portable.zip"
+          } else {
+            Write-Warning "Release dir not found: $releaseDir"
+            Get-ChildItem "Windows APP\build" -Recurse -Filter "*.exe" | Select-Object FullName
           }
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-builds
-          path: MEKA-*-Windows-*
+          path: MEKA-*-Windows-*.zip
 
-  # ── Linux App Build ────────────────────────────────────────────────────────
+  # ── Linux App Build ───────────────────────────────────────────────────────────
   build-linux:
     name: Build Linux Client
     runs-on: ubuntu-22.04
     continue-on-error: true
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install System & Audio Recording Dependencies
+      - name: Install system dependencies
         run: |
-          sudo apt-get update -qq || true
+          sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev \
             libpulse-dev libasound2-dev libspeechd-dev \
-            dpkg-dev fakeroot
+            libavcodec-dev libavformat-dev libavdevice-dev libswresample-dev \
+            ffmpeg portaudio19-dev pulseaudio-utils dpkg-dev fakeroot
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
-      - name: Enable Linux Desktop & Build
-        working-directory: ./Linux APP
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Create linux platform if missing
+        working-directory: "./Linux APP"
         run: |
-          rm -rf linux/
-          flutter config --enable-linux-desktop
-          flutter create --platforms=linux --project-name=meka_linux .
+          if [ ! -d "linux" ]; then
+            flutter create --platforms=linux --project-name=meka_linux .
+          fi
+
+      - name: Flutter pub get & build
+        working-directory: "./Linux APP"
+        run: |
           flutter pub get
-          flutter build linux --release --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
+          VER="${VERSION#v}"
+          flutter build linux --release \
+            --build-name="${VER}" \
+            --build-number=${{ github.run_number }}
 
       - name: Package .deb and tar.gz
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
+          PKG_VERSION="${VERSION#v}"
           PKG_DIR=meka-deb-pkg
+          BUNDLE_DIR="Linux APP/build/linux/x64/release/bundle"
 
-          if [ -d "Linux APP/build/linux/x64/release/bundle/" ]; then
-            mkdir -p ${PKG_DIR}/DEBIAN ${PKG_DIR}/usr/lib/meka ${PKG_DIR}/usr/bin ${PKG_DIR}/usr/share/applications
+          if [ -d "$BUNDLE_DIR" ]; then
+            mkdir -p ${PKG_DIR}/DEBIAN ${PKG_DIR}/usr/lib/meka \
+                     ${PKG_DIR}/usr/bin ${PKG_DIR}/usr/share/applications
 
-            cp -r "Linux APP/build/linux/x64/release/bundle/"* ${PKG_DIR}/usr/lib/meka/
+            cp -r "${BUNDLE_DIR}/"* ${PKG_DIR}/usr/lib/meka/
             ln -sf /usr/lib/meka/meka_linux ${PKG_DIR}/usr/bin/meka
 
             cat > ${PKG_DIR}/usr/share/applications/meka.desktop << 'EOF'
@@ -197,7 +223,7 @@ EOF
 
             cat > ${PKG_DIR}/DEBIAN/control << EOF
 Package: meka
-Version: ${VERSION}
+Version: ${PKG_VERSION}
 Architecture: amd64
 Maintainer: Project MEKA <hello@project-meka.dev>
 Depends: libgtk-3-0
@@ -206,13 +232,16 @@ Priority: optional
 Description: MEKA AI Personal Assistant & Smart Home Controller
 EOF
 
-            dpkg-deb --build ${PKG_DIR} "MEKA-${GITHUB_REF_NAME}-Linux-amd64.deb"
+            dpkg-deb --build ${PKG_DIR} "MEKA-${VERSION}-Linux-amd64.deb"
 
             # Portable tarball
-            TAR_DIR="MEKA-${GITHUB_REF_NAME}-Linux"
+            TAR_DIR="MEKA-${VERSION}-Linux"
             mkdir -p ${TAR_DIR}
-            cp -r "Linux APP/build/linux/x64/release/bundle/"* ${TAR_DIR}/
+            cp -r "${BUNDLE_DIR}/"* ${TAR_DIR}/
             tar -czf "${TAR_DIR}.tar.gz" ${TAR_DIR}/
+          else
+            echo "Bundle dir not found, listing build output:"
+            find "Linux APP/build" -name "*.so" -o -name "meka_linux" 2>/dev/null | head -20
           fi
 
       - name: Upload Linux Artifacts
@@ -223,22 +252,24 @@ EOF
             MEKA-*-Linux-*.deb
             MEKA-*-Linux.tar.gz
 
-  # ── Unified GitHub Release ──────────────────────────────────────────────────
+  # ── Unified GitHub Release ───────────────────────────────────────────────────
   publish-release:
-    name: Publish Unified GitHub Release
+    name: Publish GitHub Release
     needs: [build-webapp, build-android, build-windows, build-linux]
     runs-on: ubuntu-latest
     if: always()
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lah release-assets/ || echo "No artifacts found"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -262,7 +293,7 @@ EOF
             ### 📱 Android Mobile Client
             | Package | Description | Recommended? |
             |---------|-------------|:---:|
-            | `MEKA-${{ github.ref_name }}-Android-Universal.apk` | Universal APK for all Android devices (Android 7.0+) | ✅ |
+            | `MEKA-${{ github.ref_name }}-Android-Universal.apk` | Universal APK for all Android devices (Android 6.0+) | ✅ |
             | `MEKA-${{ github.ref_name }}-Android-arm64.apk` | 64-bit ARM devices only | ⚡ |
             | `MEKA-${{ github.ref_name }}-Android-arm32.apk` | 32-bit legacy ARM devices | |
 
@@ -271,7 +302,7 @@ EOF
             ### 🖥️ Windows Desktop Client
             | Package | Description | Recommended? |
             |---------|-------------|:---:|
-            | `MEKA-${{ github.ref_name }}-Windows-Portable.zip` | Portable ZIP (Extract and run without installing) | ⚡ |
+            | `MEKA-${{ github.ref_name }}-Windows-Portable.zip` | Portable ZIP (Extract and run) | ⚡ |
 
             ---
 
@@ -286,7 +317,7 @@ EOF
             ### ⚡ Quick Start
             1. Download the package for your platform above.
             2. Launch MEKA and connect to your **MEKA IoT Hub** (local IP or cloud VPS URL).
-            3. Monitor ESP32 hardware nodes, control smart home devices, and use voice AI assistant features!
+            3. Monitor ESP32 hardware nodes, control smart home devices, and use voice AI features!
 
             ---
             *Project MEKA — Open Source Smart Home AI Assistant*

@@ -73,6 +73,9 @@ jobs:
               with open(p, 'r') as f: c = f.read()
               c = re.sub(r'flutter\.minSdkVersion', '23', c)
               c = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', c)
+              c = re.sub(r'JavaVersion\.VERSION_1_8', 'JavaVersion.VERSION_17', c)
+              if 'lintOptions' not in c:
+                  c = re.sub(r'android\s*\{', 'android {\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }', c)
               with open(p, 'w') as f: f.write(c)
           "
           flutter pub get

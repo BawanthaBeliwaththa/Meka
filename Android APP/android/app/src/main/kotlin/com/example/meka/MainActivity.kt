@@ -59,7 +59,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         moveTaskToBack(true)
     }

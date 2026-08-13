@@ -1,32 +1,145 @@
-# Project MEKA: Next-Generation Modular AI Assistant
+# 🤖 Project MEKA: Master Electronic Kinetic Assistant
+### *Next-Generation Decentralized AI Assistant & Multi-Hub Commercial Smart Home Ecosystem*
 
-Welcome to the central repository hub for **Project MEKA**, a highly advanced, decentralized personal AI assistant. 
+[![MEKA Multi-Platform Build & Release](https://github.com/BawanthaBeliwaththa/Meka/actions/workflows/release.yml/badge.svg)](https://github.com/BawanthaBeliwaththa/Meka/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-cyan.svg)](https://opensource.org/licenses/MIT)
+[![Version: v3.0.0](https://img.shields.io/badge/Version-v3.0.0-7C3AED.svg)](https://github.com/BawanthaBeliwaththa/Meka/releases)
 
-Project MEKA is engineered to transcend traditional monolithic application structures. By utilizing a highly modular architecture, MEKA separates its physical hardware, core intelligence, and multi-platform clients into isolated, highly optimized partitions. This design ensures maximum scalability, fault tolerance, and cross-platform synergy.
+---
 
-## System Architecture
+Welcome to **Project MEKA**, an advanced, enterprise-grade, decentralized personal AI assistant and smart home platform. Built for both personal deployment and commercial distribution (white-label Multi-ESP32 smart homes), MEKA separates physical hardware nodes, core AI processing, real-time telemetry, and multi-platform client applications into robust, fault-tolerant modules.
 
-MEKA operates on a distributed architecture, seamlessly synchronized via real-time cloud infrastructure (Firebase Realtime Database) and localized WebSocket layers. The ecosystem is divided into seven core partitions:
+---
 
-### 1. [Future (AI) Hub](./Future (AI))
-The central intelligence core and routing brain of MEKA. It currently manages external AI API bridging and device registries, with an aggressive roadmap to transition into a completely autonomous, offline, on-device AI engine (zero latency, zero external tracking).
+## 🌟 Executive Features & Capabilities
 
-### 2. [Hardware & Firmware](./Hardware)
-The physical embodiment of MEKA. Powered by the ESP32 microcontroller, this repository contains the embedded C++ firmware that drives MEKA's sensory inputs, LCD matrix displays, and physical actuators, alongside the 3D printable chassis schematics.
+- 🧠 **Decentralized AI Brain & Local IoT Hub**: Python FastAPI/Flask backend providing zero-latency LLM routing, device telemetry logging, and multi-hub profile synchronization.
+- 📱 **Native Mobile Client (Android)**: Flutter app featuring real-time voice activation, QR hub onboarding, ESP32 quick-action switches, and background wake locks.
+- 🖥️ **Native Desktop Clients (Windows & Linux)**: Cyberpunk-styled desktop suites with hardware telemetry cards, speech-to-text input, and direct hub control.
+- 🌌 **Cybernetic Web Dashboard**: React + Three.js dynamic orb visualization, real-time Firebase & WebSocket telemetry, and ESP32 node administration.
+- ⚡ **Multi-ESP32 Commercial Hardware Architecture**: Supports unlimited ESP32 microcontrollers per household (Living Room, Kitchen, Bedrooms) with automated Wi-Fi provisioning and REST API heartbeat monitoring.
+- ✈️ **Telegram Control Bot**: Remote command-and-control bot for status queries, emergency overrides, and micro-controller relays.
 
-### 3. [Cybernetic Web Dashboard](./Webapp)
-A cutting-edge, cyberpunk-themed web application built in React. It serves as the visual command center, offering real-time telemetry, sensor monitoring, and administrative overrides through a stunning graphical interface.
+---
 
-### 4. [Telegram Telemetry Bot](./Telegram)
-A secure, Python-based remote command-and-control interface. It allows administrators to securely authenticate, query system status, and execute low-level hardware routing commands (e.g., mic/speaker toggles) directly from the Telegram app.
+## 🏗️ Ecosystem Architecture
 
-### 5. Mobile & Desktop Ecosystem
-Built utilizing a shared Flutter codebase, MEKA provides native client applications across all major operating systems to ensure the assistant is accessible anywhere:
-- **[Android App](./Android APP):** The mobile bridge for on-the-go voice interaction and configuration.
-- **[Linux App](./Linux APP):** Native desktop integration for Linux workstations.
-- **[Windows App](./Windows APP):** Native desktop integration for Windows workstations.
+```
+                               ┌─────────────────────────┐
+                               │   MEKA Cloud / Local    │
+                               │   Firebase & WebSockets │
+                               └───────────┬─────────────┘
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────────┐
+         │                                 │                                 │
+┌────────▼────────┐               ┌────────▼────────┐               ┌────────▼────────┐
+│  Android App    │               │   Windows App   │               │    Linux App    │
+│ (Flutter APK)   │               │  (Win32 / NSIS) │               │   (.deb Package)│
+└────────┬────────┘               └────────┬────────┘               └────────┬────────┘
+         │                                 │                                 │
+         └─────────────────────────────────┼─────────────────────────────────┘
+                                           │
+                               ┌───────────▼───────────┐
+                               │   Future (AI) Hub     │
+                               │   IoT Gateway (Py)    │
+                               └───────────┬───────────┘
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────────┐
+         │                                 │                                 │
+┌────────▼────────┐               ┌────────▼────────┐               ┌────────▼────────┐
+│ ESP32 Node #1   │               │ ESP32 Node #2   │               │ ESP32 Node #N   │
+│ (Living Room)   │               │ (Master Bedroom)│               │ (Kitchen / Yard)│
+└─────────────────┘               └─────────────────┘               └─────────────────┘
+```
 
-## Core Design Principles
-- **Decentralization:** No single point of failure. If the web UI drops, the hardware continues operating. If the mobile app is uninstalled, the Telegram bot maintains control.
-- **Real-Time Synergy:** All components react instantly to state changes across the network.
-- **Uncompromised Aesthetics:** The system is designed to look and feel like a premium, futuristic entity, avoiding generic UI patterns in favor of highly stylized, immersive interfaces.
+---
+
+## 📥 Installation & Download Guidance
+
+Pre-compiled production binaries for all operating systems are generated automatically via GitHub Actions:
+👉 **[Download MEKA Releases](https://github.com/BawanthaBeliwaththa/Meka/releases)**
+
+### 📱 1. Android Installation
+- **Universal APK**: Download `MEKA-v3.0.0-Android-Universal.apk` and tap to install on any Android 7.0+ device.
+- **Architecture Specific**:
+  - 64-bit ARM: `MEKA-v3.0.0-Android-arm64.apk`
+  - 32-bit ARM: `MEKA-v3.0.0-Android-arm32.apk`
+
+### 🖥️ 2. Windows Installation
+- **Setup Installer**: Download `MEKA-v3.0.0-Windows-Setup.exe` and run the wizard to create Start Menu & Desktop shortcuts.
+- **Portable Edition**: Download `MEKA-v3.0.0-Windows-Portable.zip`, extract to any folder, and execute `meka_desktop.exe`.
+
+### 🐧 3. Linux Installation
+- **Debian / Ubuntu / Mint**:
+  ```bash
+  sudo dpkg -i MEKA-v3.0.0-Linux-amd64.deb
+  sudo apt-get install -f # resolve any missing runtime libs
+  ```
+- **Universal Linux Portable**:
+  ```bash
+  tar -xzf MEKA-v3.0.0-Linux.tar.gz
+  cd MEKA-v3.0.0-Linux
+  ./meka_linux
+  ```
+
+---
+
+## 🚀 Quick Start & Development Setup
+
+### 1. IoT Hub Server Setup (`Future (AI)`)
+```bash
+cd "Future (AI)/iot_hub"
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+pip install -r requirements.txt
+python hub_server.py
+```
+*Hub running on `http://localhost:8000` or `http://<YOUR_LOCAL_IP>:8000`*
+
+### 2. Web Application Setup (`Webapp`)
+```bash
+cd Webapp
+npm install
+cp .env.example .env # Set your Firebase & Hub URL
+npm run dev
+```
+*Access Web Dashboard at `http://localhost:5173`*
+
+### 3. Telegram Telemetry Bot (`Telegram`)
+```bash
+cd Telegram
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+cp firebase-adminsdk.json.example firebase-adminsdk.json # Add service key
+python bot.py
+```
+
+### 4. Commercial ESP32 Micro-Controller Firmware (`Hardware`)
+1. Open `Hardware/` in VS Code with the **PlatformIO** extension.
+2. Update `config.h` with your local Wi-Fi SSIDs and MEKA IoT Hub Server IP address.
+3. Connect your ESP32 board via USB.
+4. Click **PlatformIO: Build & Upload**.
+
+---
+
+## 🔌 Hardware Wiring & ESP32 Configuration
+
+| ESP32 Pin | Connected Component | Function |
+|:---:|:---:|:---:|
+| `GPIO 2` | Onboard LED | Status / Heartbeat indicator |
+| `GPIO 4` | Relay Switch #1 | Living Room Main Lighting |
+| `GPIO 5` | Relay Switch #2 | Fan / Climate Control |
+| `GPIO 21 (SDA)` | OLED Display SSD1306 | System Status UI |
+| `GPIO 22 (SCL)` | OLED Display SSD1306 | System Status Clock |
+| `GPIO 34 (ADC)`| Analog DHT11 / LM35 | Temperature & Humidity Telemetry |
+
+---
+
+## 📄 License & Attribution
+
+Project MEKA is released under the **MIT License**. Created by [Bawantha Beliwaththa](https://github.com/BawanthaBeliwaththa).

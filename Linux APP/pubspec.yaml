@@ -10,45 +10,20 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI & Fonts
   google_fonts: ^6.1.0
-
-  # Networking & AI
   http: ^1.2.0
   web_socket_channel: ^2.4.0
-
-  # Storage
-  shared_preferences: ^2.3.0
-  path_provider: ^2.1.4
-
-  # TTS (Linux via espeak/festival via platform channel or flutter_tts)
-  flutter_tts: ^3.8.5
-
-  # Speech recognition
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.1
+  flutter_tts: ^3.8.3
   speech_to_text: ^6.6.0
 
-  # Firebase
-  firebase_core: ^3.4.1
-  firebase_database: ^11.1.2
-  firebase_auth: ^5.2.1
-  google_sign_in: ^6.2.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
-    - assets/fonts/
-
-  fonts:
-    - family: Orbitron
-      fonts:
-        - asset: assets/fonts/Orbitron-Regular.ttf
-        - asset: assets/fonts/Orbitron-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Orbitron-Black.ttf
-          weight: 900
-    - family: Rajdhani
-      fonts:
-        - asset: assets/fonts/Rajdhani-Regular.ttf
-        - asset: assets/fonts/Rajdhani-Bold.ttf
-          weight: 700
+    - assets/images/logo.png

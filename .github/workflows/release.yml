@@ -119,7 +119,7 @@ jobs:
 
       - name: Generate Windows platform files
         working-directory: ./Windows APP
-        run: flutter create --platforms=windows .
+        run: flutter create --platforms=windows --offline .
 
       - name: Flutter pub get
         working-directory: ./Windows APP
@@ -173,7 +173,7 @@ jobs:
 
       - name: Generate Linux platform files
         working-directory: ./Linux APP
-        run: flutter create --platforms=linux .
+        run: flutter create --platforms=linux --offline .
 
       - name: Flutter pub get
         working-directory: ./Linux APP

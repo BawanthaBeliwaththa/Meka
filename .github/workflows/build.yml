@@ -21,23 +21,9 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Generate Android Platform & Fix SDK Config
+      - name: Install Dependencies & Pub Get
         working-directory: ./Android APP
-        run: |
-          flutter create --platforms=android --project-name=meka .
-          python3 -c "
-          import os, re
-          def rw(path, fn):
-              if os.path.exists(path):
-                  with open(path, 'r') as f: c = f.read()
-                  nc = fn(c)
-                  with open(path, 'w') as f: f.write(nc)
-
-          rw('android/app/build.gradle', lambda c: re.sub(r'flutter\.minSdkVersion', '23', c))
-          rw('android/app/build.gradle', lambda c: re.sub(r'flutter\.compileSdkVersion', '34', c))
-          rw('android/app/build.gradle', lambda c: re.sub(r'flutter\.targetSdkVersion', '34', c))
-          "
-          flutter pub get
+        run: flutter pub get
       - name: Build APK
         working-directory: ./Android APP
         run: flutter build apk --release --no-tree-shake-icons

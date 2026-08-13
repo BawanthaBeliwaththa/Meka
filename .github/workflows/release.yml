@@ -23,8 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: './Webapp/package-lock.json'
 
       - name: Build Web Application Bundle
         working-directory: ./Webapp
@@ -63,14 +61,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform & Set minSdk 23
+      - name: Install dependencies
         working-directory: ./Android APP
-        run: |
-          rm -rf android/
-          flutter create --platforms=android --project-name=meka .
-          sed -i 's/flutter.minSdkVersion/23/g' android/app/build.gradle
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle || true
-          flutter pub get
+        run: flutter pub get
 
       - name: Build Universal & Split APKs
         working-directory: ./Android APP

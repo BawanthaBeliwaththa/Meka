@@ -66,10 +66,13 @@ jobs:
         run: flutter config --enable-windows-desktop
       - name: Generate fresh Windows platform files
         run: |
+          if (Test-Path "$env:GITHUB_WORKSPACE\Windows APP\windows") {
+            Remove-Item -Recurse -Force "$env:GITHUB_WORKSPACE\Windows APP\windows"
+          }
           New-Item -ItemType Directory -Force -Path "C:\temp_win"
           Set-Location "C:\temp_win"
           flutter create --platforms=windows --project-name=meka_windows .
-          Copy-Item -Recurse -Force "windows" "$env:GITHUB_WORKSPACE\Windows APP\"
+          Copy-Item -Recurse -Force "windows" "$env:GITHUB_WORKSPACE\Windows APP\windows"
       - name: Flutter pub get
         working-directory: ./Windows APP
         run: flutter pub get
@@ -101,10 +104,11 @@ jobs:
         run: flutter config --enable-linux-desktop
       - name: Generate fresh Linux platform files
         run: |
+          rm -rf "$GITHUB_WORKSPACE/Linux APP/linux"
           mkdir -p /tmp/gen_lin
           cd /tmp/gen_lin
           flutter create --platforms=linux --project-name=meka_linux .
-          cp -r linux "$GITHUB_WORKSPACE/Linux APP/"
+          cp -r linux "$GITHUB_WORKSPACE/Linux APP/linux"
       - name: Flutter pub get
         working-directory: ./Linux APP
         run: flutter pub get

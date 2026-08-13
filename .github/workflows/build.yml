@@ -36,11 +36,24 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      - name: Install Dependencies & Build APK
+      - name: Generate Fresh Android Project & Patch SDK
         working-directory: ./Android APP
         run: |
+          rm -rf android/
+          flutter create --platforms=android --project-name=meka .
+          python3 -c "
+          import os, re
+          p = 'android/app/build.gradle'
+          if os.path.exists(p):
+              with open(p, 'r') as f: c = f.read()
+              c = re.sub(r'flutter\.minSdkVersion', '23', c)
+              c = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 23', c)
+              with open(p, 'w') as f: f.write(c)
+          "
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons
+      - name: Build APK
+        working-directory: ./Android APP
+        run: flutter build apk --release --no-tree-shake-icons
 
   build-windows:
     name: Build Windows App
@@ -56,6 +69,7 @@ jobs:
       - name: Generate Windows Platform & Build
         working-directory: ./Windows APP
         run: |
+          if (Test-Path "windows") { Remove-Item -Recurse -Force "windows" }
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name=meka_windows .
           flutter pub get
@@ -82,6 +96,7 @@ jobs:
       - name: Generate Linux Platform & Build
         working-directory: ./Linux APP
         run: |
+          rm -rf linux/
           flutter config --enable-linux-desktop
           flutter create --platforms=linux --project-name=meka_linux .
           flutter pub get

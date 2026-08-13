@@ -31,12 +31,6 @@ android {
         abortOnError false
     }
 
-    signingConfigs {
-        debug {
-            // Uses standard Android debug keystore automatically
-        }
-    }
-
     buildTypes {
         release {
             signingConfig signingConfigs.debug

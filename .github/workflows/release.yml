@@ -117,9 +117,12 @@ jobs:
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Generate Windows platform files
-        working-directory: ./Windows APP
-        run: flutter create --platforms=windows --org=com.example.meka .
+      - name: Generate fresh Windows platform files
+        run: |
+          mkdir -p /tmp/gen_win
+          cd /tmp/gen_win
+          flutter create --platforms=windows --project-name=meka_windows .
+          cp -r windows "$GITHUB_WORKSPACE/Windows APP/"
 
       - name: Flutter pub get
         working-directory: ./Windows APP
@@ -171,9 +174,12 @@ jobs:
       - name: Enable Linux desktop
         run: flutter config --enable-linux-desktop
 
-      - name: Generate Linux platform files
-        working-directory: ./Linux APP
-        run: flutter create --platforms=linux --org=com.example.meka .
+      - name: Generate fresh Linux platform files
+        run: |
+          mkdir -p /tmp/gen_lin
+          cd /tmp/gen_lin
+          flutter create --platforms=linux --project-name=meka_linux .
+          cp -r linux "$GITHUB_WORKSPACE/Linux APP/"
 
       - name: Flutter pub get
         working-directory: ./Linux APP

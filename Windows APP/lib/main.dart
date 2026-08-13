@@ -54,7 +54,6 @@ class MekaDesktopApp extends StatelessWidget {
           surface: const Color(0xFF030712),
           error: const Color(0xFFFF0055),
         ),
-        fontFamily: 'Rajdhani',
         scaffoldBackgroundColor: const Color(0xFF030712),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF040A1A),

@@ -1,0 +1,147 @@
+name: 🖥️ Build & Release — Windows App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Flutter Setup ─────────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── Code Analysis ─────────────────────────────────────────────────────
+      - name: Run Flutter analyze
+        run: flutter analyze --no-fatal-warnings
+        continue-on-error: true
+
+      # ── Build Windows ─────────────────────────────────────────────────────
+      - name: Build Windows Release
+        run: |
+          flutter build windows --release `
+            --build-name=${{ github.ref_name }} `
+            --build-number=${{ github.run_number }}
+
+      # ── Portable ZIP ──────────────────────────────────────────────────────
+      - name: Create Portable ZIP
+        run: |
+          $version = "${{ github.ref_name }}"
+          $srcDir = "build\windows\x64\runner\Release"
+          $zipName = "MEKA-${version}-Windows-Portable.zip"
+          Compress-Archive -Path "$srcDir\*" -DestinationPath $zipName
+          Write-Host "Created: $zipName"
+          Get-Item $zipName | Select-Object Name, @{N="Size(MB)";E={[math]::Round($_.Length/1MB, 2)}}
+
+      # ── NSIS Installer (optional, skip if nsis not available) ─────────────
+      - name: Install NSIS
+        run: choco install nsis -y --no-progress
+        continue-on-error: true
+
+      - name: Create NSIS installer script
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $nsis = @"
+          !define PRODUCT_NAME "MEKA"
+          !define PRODUCT_VERSION "$version"
+          !define PRODUCT_PUBLISHER "Project MEKA"
+          !define PRODUCT_WEB_SITE "https://github.com/project-meka"
+
+          Name "`${PRODUCT_NAME} `${PRODUCT_VERSION}"
+          OutFile "MEKA-${{ github.ref_name }}-Windows-Setup.exe"
+          InstallDir "`$PROGRAMFILES64\MEKA"
+          InstallDirRegKey HKLM "Software\MEKA" "Install_Dir"
+          RequestExecutionLevel admin
+
+          Page directory
+          Page instfiles
+
+          Section "MEKA (required)"
+            SectionIn RO
+            SetOutPath "`$INSTDIR"
+            File /r "build\windows\x64\runner\Release\*"
+            WriteRegStr HKLM SOFTWARE\MEKA "" "`$INSTDIR"
+            CreateDirectory "`$SMPROGRAMS\MEKA"
+            CreateShortcut "`$SMPROGRAMS\MEKA\MEKA.lnk" "`$INSTDIR\meka_desktop.exe"
+            CreateShortcut "`$DESKTOP\MEKA.lnk" "`$INSTDIR\meka_desktop.exe"
+          SectionEnd
+
+          Section "Uninstall"
+            Delete "`$INSTDIR\*"
+            RMDir /r "`$INSTDIR"
+            Delete "`$SMPROGRAMS\MEKA\MEKA.lnk"
+            Delete "`$DESKTOP\MEKA.lnk"
+            RMDir "`$SMPROGRAMS\MEKA"
+          SectionEnd
+          "@
+          $nsis | Out-File -Encoding ASCII -FilePath "installer.nsi"
+
+      - name: Build NSIS installer
+        run: |
+          if (Get-Command makensis -ErrorAction SilentlyContinue) {
+            makensis installer.nsi
+            Write-Host "NSIS installer created successfully"
+          } else {
+            Write-Host "NSIS not available, skipping installer"
+          }
+        continue-on-error: true
+
+      # ── Publish GitHub Release ────────────────────────────────────────────
+      - name: Create GitHub Release with Windows builds
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🖥️ MEKA Windows ${{ github.ref_name }}"
+          body: |
+            ## 🖥️ MEKA Windows Desktop App ${{ github.ref_name }}
+
+            ### ⬇️ Download & Install
+
+            | File | Description | Recommended? |
+            |------|-------------|:---:|
+            | `MEKA-${{ github.ref_name }}-Windows-Setup.exe` | Installer (adds to Start Menu & Desktop) | ✅ |
+            | `MEKA-${{ github.ref_name }}-Windows-Portable.zip` | Portable ZIP (no install, extract & run) | ⚡ |
+
+            ### 🚀 Installation (Installer)
+            1. **Download** `MEKA-...-Windows-Setup.exe`
+            2. Run the installer (may show SmartScreen warning — click "More Info" → "Run anyway")
+            3. Follow the installation wizard
+            4. Launch MEKA from the Desktop shortcut or Start Menu
+
+            ### 🚀 Installation (Portable)
+            1. **Download** `MEKA-...-Windows-Portable.zip`
+            2. Extract to any folder (e.g., `C:\MEKA`)
+            3. Run `meka_desktop.exe`
+
+            ### 📋 Requirements
+            - Windows **10 or 11** (64-bit)
+            - .NET Runtime (usually pre-installed)
+            - Wi-Fi connection to your MEKA IoT Hub
+
+            ### 🔗 Links
+            - [Setup Guide](https://github.com/project-meka/.github/blob/main/SETUP.md)
+            - [Report a Bug](https://github.com/project-meka/Windows-APP/issues)
+          files: |
+            MEKA-${{ github.ref_name }}-Windows-Portable.zip
+            MEKA-${{ github.ref_name }}-Windows-Setup.exe
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

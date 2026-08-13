@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>MEKA — Neural Body Node</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!-- Socket.IO — served by Hub, CDN fallback -->
+    <script src="/socket.io/socket.io.js" onerror="loadSocketIOCDN()"></script>
+    <style>
+        :root {
+            --neon: #00d4ff;
+            --neon2: #7c4dff;
+            --neon3: #00ff88;
+            --danger: #ff1744;
+            --warn: #ffc107;
+            --bg: #00020a;
+            --bg2: #040d1a;
+            --card: rgba(0,212,255,0.04);
+            --border: rgba(0,212,255,0.18);
+            --text: #c8e8ff;
+            --dim: rgba(200,232,255,0.35);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow-x: hidden;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .container { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 16px 14px; }
+
+        /* ── Header ── */
+        .header { text-align: center; padding: 20px 0 14px; }
+        .header-logo {
+            font-size: 2.2rem; font-weight: 700;
+            letter-spacing: 12px; color: var(--neon);
+            text-shadow: 0 0 30px var(--neon), 0 0 60px rgba(0,212,255,0.3);
+            animation: flicker 4s infinite;
+        }
+        .header-sub {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem; color: var(--dim); letter-spacing: 4px;
+            margin-top: 4px;
+        }
+        @keyframes flicker {
+            0%,95%,100% { opacity:1; }
+            96% { opacity:0.7; }
+            97% { opacity:1; }
+            98% { opacity:0.5; }
+            99% { opacity:1; }
+        }
+
+        /* ── Status bar ── */
+        .status-bar {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        .status-dot.offline  { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+        .status-dot.online   { background: var(--neon3);  box-shadow: 0 0 8px var(--neon3); animation: pulse 2s infinite; }
+        .status-dot.pending  { background: var(--warn);   box-shadow: 0 0 8px var(--warn);  animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .status-text { font-size: 0.88rem; font-weight: 600; flex: 1; }
+        .status-ip   { font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; color: var(--dim); }
+
+        /* ── Video ── */
+        .video-wrap {
+            position: relative; width: 100%; border-radius: 14px;
+            overflow: hidden; background: #000;
+            border: 1px solid var(--border); margin-bottom: 10px;
+            aspect-ratio: 16/9; display: none;
+        }
+        .video-wrap.visible { display: block; }
+        #video-preview { width: 100%; height: 100%; object-fit: cover; }
+        .video-overlay {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(0,0,0,0.6); border: 1px solid var(--neon);
+            border-radius: 6px; padding: 3px 8px;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.65rem;
+            color: var(--neon); display: flex; align-items: center; gap: 5px;
+        }
+        .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); animation: pulse 1s infinite; }
+
+        /* ── Screen share preview ── */
+        .screen-wrap {
+            position: relative; width: 100%; border-radius: 14px;
+            overflow: hidden; background: #000a18;
+            border: 1px solid rgba(124,77,255,0.4); margin-bottom: 10px;
+            aspect-ratio: 16/9; display: none;
+        }
+        .screen-wrap.visible { display: block; }
+        #screen-preview { width: 100%; height: 100%; object-fit: contain; }
+        .screen-overlay {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(0,0,0,0.7); border: 1px solid rgba(124,77,255,0.6);
+            border-radius: 6px; padding: 3px 8px;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.65rem;
+            color: #bb88ff; display: flex; align-items: center; gap: 5px;
+        }
+        .screen-dot { width: 7px; height: 7px; border-radius: 50%; background: #bb88ff; animation: pulse 1.5s infinite; }
+
+        /* ── Sensor Grid ── */
+        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .sensor-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            cursor: pointer; transition: all 0.25s; user-select: none;
+            -webkit-user-select: none;
+        }
+        .sensor-card:active { transform: scale(0.96); }
+        .sensor-card.active { border-color: var(--neon); background: rgba(0,212,255,0.08); }
+        .sensor-card.active .sensor-icon { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+        .sensor-card.screen-active { border-color: #bb88ff; background: rgba(124,77,255,0.1); }
+        .sensor-card.screen-active .sensor-icon { color: #bb88ff; text-shadow: 0 0 10px #bb88ff; }
+        .sensor-icon { font-size: 1.6rem; transition: all 0.3s; }
+        .sensor-label { font-size: 0.7rem; color: var(--dim); font-weight: 600; letter-spacing: 2px; }
+        .sensor-status { font-size: 0.76rem; font-weight: 700; color: var(--text); text-align: center; }
+
+        /* ── Buttons ── */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .btn {
+            padding: 14px 10px; border: none; border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            min-height: 50px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-primary { background: linear-gradient(135deg, #0088cc, #0055aa); color: #fff; border: 1px solid rgba(0,212,255,0.4); }
+        .btn-primary:not(:disabled):hover { background: linear-gradient(135deg, #00a8e8, #0077cc); box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+        .btn-primary:not(:disabled):active { transform: scale(0.96); }
+        .btn-success { background: linear-gradient(135deg, #004d30, #006644); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+        .btn-danger  { background: linear-gradient(135deg, #550011, #880022); color: #ff3366; border: 1px solid rgba(255,23,68,0.3); }
+        .btn-purple  { background: linear-gradient(135deg, #2d0080, #5500cc); color: #bb88ff; border: 1px solid rgba(124,77,255,0.3); }
+        .btn-purple:not(:disabled):active { transform: scale(0.96); }
+        .btn-full    { grid-column: 1 / -1; }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn:not(:disabled):active { transform: scale(0.96); }
+
+        /* ── Camera selector ── */
+        .cam-selector {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 14px; margin-bottom: 10px;
+            display: none; align-items: center; gap: 10px;
+        }
+        .cam-selector.show { display: flex; }
+        .cam-selector label { font-size: 0.8rem; color: var(--dim); white-space: nowrap; }
+        .cam-selector select {
+            flex: 1; background: rgba(0,0,0,0.5); color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 10px; font-size: 0.82rem; cursor: pointer;
+        }
+        .cam-selector select:focus { outline: none; border-color: var(--neon); }
+
+        /* ── Audio bar ── */
+        .audio-bar-wrap { margin-bottom: 10px; display: none; }
+        .audio-bar-wrap.show { display: block; }
+        .audio-bar-label { font-size: 0.72rem; color: var(--dim); letter-spacing: 2px; margin-bottom: 4px; }
+        .audio-bar { width: 100%; height: 6px; background: rgba(0,212,255,0.1); border-radius: 3px; overflow: hidden; }
+        .audio-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon3), var(--neon)); border-radius: 3px; transition: width 0.08s; }
+
+        /* ── Log ── */
+        .log {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(0,212,255,0.1);
+            border-radius: 10px; padding: 10px 12px;
+            max-height: 130px; overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65rem; color: var(--dim);
+        }
+        .log::-webkit-scrollbar { width: 4px; }
+        .log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .log-entry { margin-bottom: 2px; }
+        .log-entry.ok  { color: var(--neon3); }
+        .log-entry.err { color: var(--danger); }
+        .log-entry.warn { color: var(--warn); }
+        .log-entry.info { color: var(--neon); }
+
+        /* ── Modal Overlay ── */
+        .modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px;
+        }
+        .modal.hidden { display: none; }
+        .modal-box {
+            background: #060e1f; border: 1px solid var(--neon);
+            border-radius: 20px; padding: 28px 24px; max-width: 440px; width: 100%;
+            box-shadow: 0 0 60px rgba(0,212,255,0.25);
+            animation: rise 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes rise { from{transform:scale(0.85) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+        .modal-icon { font-size: 3.2rem; text-align: center; margin-bottom: 12px; }
+        .modal-title {
+            text-align: center; color: var(--neon); font-size: 1.1rem;
+            font-weight: 700; letter-spacing: 4px; margin-bottom: 10px;
+        }
+        .modal-body { color: var(--dim); font-size: 0.84rem; line-height: 1.6; margin-bottom: 20px; text-align: center; }
+        .perm-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 11px 14px; border-radius: 10px;
+            background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.12);
+            margin-bottom: 8px; font-size: 0.88rem; font-weight: 600;
+        }
+        .perm-check { width: 20px; height: 20px; accent-color: var(--neon); cursor: pointer; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-btn-allow {
+            flex: 1; padding: 14px; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, var(--neon3), #00aa66); color: #000;
+            font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 800;
+            cursor: pointer; letter-spacing: 1px;
+        }
+        .modal-btn-deny {
+            padding: 14px 18px; border: 1px solid rgba(255,23,68,0.3);
+            border-radius: 12px; background: rgba(255,23,68,0.1);
+            color: var(--danger); font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem; font-weight: 700; cursor: pointer;
+        }
+
+        /* ── Screen share tip ── */
+        .screen-tip {
+            background: rgba(124,77,255,0.08);
+            border: 1px solid rgba(124,77,255,0.25);
+            border-radius: 10px; padding: 10px 14px;
+            font-size: 0.78rem; color: #bb88ff;
+            margin-bottom: 10px; display: none;
+            line-height: 1.5;
+        }
+        .screen-tip.show { display: block; }
+
+        /* ── Spacer ── */
+        .spacer { height: 20px; }
+    </style>
+</head>
+<body>
+
+<!-- ── Permission Modal ── -->
+<div id="modalPerm" class="modal hidden">
+    <div class="modal-box">
+        <div class="modal-icon">🤖</div>
+        <div class="modal-title">MEKA NEURAL ACCESS</div>
+        <div class="modal-body">MEKA requests access to this device's sensors to integrate it as an active body node in the MEKA network.</div>
+        <div class="perm-row">
+            <span>📷 Camera Sensor</span>
+            <input type="checkbox" id="permCam" class="perm-check" checked>
+        </div>
+        <div class="perm-row">
+            <span>🎤 Microphone Sensor</span>
+            <input type="checkbox" id="permMic" class="perm-check" checked>
+        </div>
+        <div class="perm-row">
+            <span>🖥️ Screen Share</span>
+            <input type="checkbox" id="permScreen" class="perm-check" checked>
+        </div>
+        <div class="perm-row">
+            <span>🔊 Speaker Output</span>
+            <input type="checkbox" id="permSpk" class="perm-check" checked>
+        </div>
+        <div class="modal-btns">
+            <button class="modal-btn-allow" onclick="grantAndConnect()">⚡ GRANT &amp; CONNECT</button>
+            <button class="modal-btn-deny"  onclick="denyAccess()">✕ DENY</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── HTTPS Modal ── -->
+<div id="modalHttps" class="modal hidden">
+    <div class="modal-box">
+        <div class="modal-icon">🔒</div>
+        <div class="modal-title">SECURE MODE REQUIRED</div>
+        <div class="modal-body">Camera and microphone access requires a secure HTTPS connection. Tap below to switch automatically.</div>
+        <div class="modal-btns">
+            <button class="modal-btn-allow" onclick="switchToHttps()">⚡ SWITCH TO HTTPS</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-logo">M·E·K·A</div>
+        <div class="header-sub">NEURAL BODY NODE · GLOBAL LINK</div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar">
+        <div class="status-dot offline" id="statusDot"></div>
+        <div class="status-text" id="statusText">INITIALIZING...</div>
+        <div class="status-ip" id="statusIp"></div>
+    </div>
+
+    <!-- Camera Video Preview -->
+    <div class="video-wrap" id="videoWrap">
+        <video id="video-preview" autoplay playsinline muted></video>
+        <div class="video-overlay">
+            <div class="rec-dot"></div>LIVE · CAM
+        </div>
+    </div>
+
+    <!-- Screen Share Preview -->
+    <div class="screen-wrap" id="screenWrap">
+        <canvas id="screen-preview"></canvas>
+        <div class="screen-overlay">
+            <div class="screen-dot"></div>SCREEN SHARE
+        </div>
+    </div>
+
+    <!-- Screen Share Tip -->
+    <div class="screen-tip" id="screenTip">
+        📺 <strong>Screen share active.</strong> Your screen is being streamed to MEKA admin. Tap the screen share button again to stop.
+    </div>
+
+    <!-- Camera Selector -->
+    <div class="cam-selector" id="camSelector">
+        <label>📷 CAM</label>
+        <select id="camSelect" onchange="switchToCam(this.value)">
+            <option value="">Detecting cameras...</option>
+        </select>
+    </div>
+
+    <!-- Sensor Grid -->
+    <div class="sensor-grid">
+        <div class="sensor-card" id="sensorCam" onclick="toggleSensor('camera')">
+            <div class="sensor-icon">📷</div>
+            <div class="sensor-label">CAMERA</div>
+            <div class="sensor-status" id="sensorCamStatus">STANDBY</div>
+        </div>
+        <div class="sensor-card" id="sensorMic" onclick="toggleSensor('mic')">
+            <div class="sensor-icon">🎤</div>
+            <div class="sensor-label">MICROPHONE</div>
+            <div class="sensor-status" id="sensorMicStatus">STANDBY</div>
+        </div>
+        <div class="sensor-card" id="sensorScreen" onclick="requestScreenShare()">
+            <div class="sensor-icon">🖥️</div>
+            <div class="sensor-label">SCREEN SHARE</div>
+            <div class="sensor-status" id="sensorScreenStatus">STANDBY</div>
+        </div>
+        <div class="sensor-card" id="sensorSpk" onclick="toggleSensor('speaker')">
+            <div class="sensor-icon">🔊</div>
+            <div class="sensor-label">SPEAKER</div>
+            <div class="sensor-status" id="sensorSpkStatus">READY</div>
+        </div>
+    </div>
+
+    <!-- Audio Level -->
+    <div class="audio-bar-wrap" id="audioBarWrap">
+        <div class="audio-bar-label">MIC LEVEL</div>
+        <div class="audio-bar"><div class="audio-bar-fill" id="audioBarFill"></div></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-grid">
+        <button class="btn btn-primary btn-full" id="btnConnect" onclick="initConnect()">
+            ⚡ CONNECT TO MEKA
+        </button>
+        <button class="btn btn-success" id="btnFlip" onclick="flipCamera()" disabled>
+            🔄 FLIP CAM
+        </button>
+        <button class="btn btn-purple" id="btnScreen" onclick="requestScreenShare()" disabled>
+            🖥️ SCREEN SHARE
+        </button>
+        <button class="btn btn-danger btn-full" id="btnDisconnect" onclick="disconnectAll()" disabled>
+            ⏹️ DISCONNECT
+        </button>
+    </div>
+
+    <!-- Log -->
+    <div class="log" id="logEl"></div>
+    <div class="spacer"></div>
+</div>
+
+<script>
+// ── Socket.IO CDN fallback ───────────────────────────────────────────
+function loadSocketIOCDN() {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
+    s.onload = () => { log('Socket.IO loaded from CDN', 'warn'); };
+    s.onerror = () => { log('Socket.IO CDN failed — offline?', 'err'); };
+    document.head.appendChild(s);
+}
+
+// ── State ────────────────────────────────────────────────────────────
+let socket = null;
+let camStream = null;
+let screenStream = null;
+let micStream = null;
+let isConnected = false;
+let shareCamera = true, shareMic = true, shareScreen = true, shareSpeaker = true;
+let captureInterval = null;
+let screenInterval = null;
+let audioCtx = null, audioAnalyser = null, audioProcessor = null;
+let allCameras = [];
+let currentCamId = null;
+let socketConnectAttempts = 0;
+
+// ── DOM refs ─────────────────────────────────────────────────────────
+const statusDot    = document.getElementById('statusDot');
+const statusText   = document.getElementById('statusText');
+const statusIp     = document.getElementById('statusIp');
+const videoEl      = document.getElementById('video-preview');
+const videoWrap    = document.getElementById('videoWrap');
+const screenCanvas = document.getElementById('screen-preview');
+const screenCtx    = screenCanvas.getContext('2d');
+const screenWrap   = document.getElementById('screenWrap');
+const screenTip    = document.getElementById('screenTip');
+const logEl        = document.getElementById('logEl');
+const btnConnect   = document.getElementById('btnConnect');
+const btnDisconn   = document.getElementById('btnDisconnect');
+const btnFlip      = document.getElementById('btnFlip');
+const btnScreen    = document.getElementById('btnScreen');
+const camSelectorEl= document.getElementById('camSelector');
+const camSelectEl  = document.getElementById('camSelect');
+const audioBarFill = document.getElementById('audioBarFill');
+const audioBarWrap = document.getElementById('audioBarWrap');
+
+// Hidden video element for screen capture
+const screenVideo  = document.createElement('video');
+screenVideo.autoplay = true; screenVideo.muted = true; screenVideo.playsInline = true;
+
+// ── Logging ──────────────────────────────────────────────────────────
+function log(msg, type = '') {
+    const e = document.createElement('div');
+    e.className = 'log-entry ' + type;
+    e.textContent = new Date().toLocaleTimeString('en',{hour12:false}) + ' ▸ ' + msg;
+    logEl.prepend(e);
+    if (logEl.children.length > 100) logEl.lastChild.remove();
+}
+
+// ── Status ───────────────────────────────────────────────────────────
+function setStatus(text, state = 'offline') {
+    statusText.textContent = text;
+    statusDot.className = 'status-dot ' + state;
+}
+
+function updateSensorCard(id, active, statusLabel, isScreen = false) {
+    const card = document.getElementById('sensor' + id);
+    const stat = document.getElementById('sensor' + id + 'Status');
+    card.classList.remove('active', 'screen-active');
+    if (active) {
+        card.classList.add(isScreen ? 'screen-active' : 'active');
+    }
+    if (stat) stat.textContent = statusLabel;
+}
+
+// ── HTTPS check ──────────────────────────────────────────────────────
+function checkSecureContext() {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        document.getElementById('modalHttps').classList.remove('hidden');
+        return false;
+    }
+    return true;
+}
+function switchToHttps() {
+    window.location.href = 'https://' + window.location.host + window.location.pathname;
+}
+
+// ── Permission flow ──────────────────────────────────────────────────
+function initConnect() {
+    if (!checkSecureContext()) return;
+    if (!localStorage.getItem('meka_granted')) {
+        document.getElementById('modalPerm').classList.remove('hidden');
+    } else {
+        startConnect();
+    }
+}
+
+function grantAndConnect() {
+    shareCamera = document.getElementById('permCam').checked;
+    shareMic    = document.getElementById('permMic').checked;
+    shareScreen = document.getElementById('permScreen').checked;
+    shareSpeaker= document.getElementById('permSpk').checked;
+    localStorage.setItem('meka_granted', '1');
+    document.getElementById('modalPerm').classList.add('hidden');
+    startConnect();
+}
+
+function denyAccess() {
+    document.getElementById('modalPerm').classList.add('hidden');
+    setStatus('ACCESS DENIED', 'offline');
+    log('Access denied by user', 'err');
+}
+
+// ── Camera enumeration ───────────────────────────────────────────────
+async function enumerateCameras() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        allCameras = devices.filter(d => d.kind === 'videoinput');
+        if (allCameras.length > 0) {
+            camSelectEl.innerHTML = allCameras.map((d, i) =>
+                `<option value="${d.deviceId}">${d.label || 'Camera ' + (i+1)}</option>`
+            ).join('');
+            camSelectorEl.classList.add('show');
+            currentCamId = allCameras[0].deviceId;
+            log(`Found ${allCameras.length} camera(s)`, 'ok');
+        }
+    } catch(e) {
+        log('Camera enumeration failed: ' + e.message, 'warn');
+    }
+}
+
+// ── Media streams ────────────────────────────────────────────────────
+async function getCameraStream(deviceId) {
+    const constraints = {
+        video: deviceId
+            ? { deviceId: { exact: deviceId }, width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:15} }
+            : { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:15} },
+        audio: false
+    };
+    return navigator.mediaDevices.getUserMedia(constraints);
+}
+
+async function getMicStream() {
+    return navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation:true, noiseSuppression:true, sampleRate:16000 },
+        video: false
+    });
+}
+
+// ── Connect flow ─────────────────────────────────────────────────────
+async function startConnect() {
+    setStatus('REQUESTING PERMISSIONS...', 'pending');
+    btnConnect.disabled = true;
+
+    try {
+        if (shareCamera) {
+            try {
+                const tempStream = await getCameraStream(null);
+                tempStream.getTracks().forEach(t => t.stop());
+                await enumerateCameras();
+            } catch(e) {
+                log('Camera perm denied: ' + e.message, 'warn');
+                shareCamera = false;
+            }
+        }
+
+        if (shareCamera && allCameras.length > 0) {
+            try {
+                camStream = await getCameraStream(currentCamId || allCameras[0]?.deviceId);
+                videoEl.srcObject = camStream;
+                videoWrap.classList.add('visible');
+                btnFlip.disabled = false;
+                updateSensorCard('Cam', true, 'ACTIVE');
+                log('Camera streaming active', 'ok');
+            } catch(e) {
+                log('Camera failed: ' + e.message, 'warn');
+            }
+        }
+
+        if (shareMic) {
+            try {
+                micStream = await getMicStream();
+                startMicCapture(micStream);
+                updateSensorCard('Mic', true, 'STREAMING');
+                audioBarWrap.classList.add('show');
+                log('Microphone active', 'ok');
+            } catch(e) {
+                log('Mic failed: ' + e.message, 'warn');
+            }
+        }
+
+        updateSensorCard('Spk', shareSpeaker, shareSpeaker ? 'READY' : 'OFF');
+        
+        // Enable screen share button now that we're connected
+        btnScreen.disabled = false;
+        
+        openSocket();
+
+    } catch(e) {
+        log('Connection error: ' + e.message, 'err');
+        setStatus('ERROR — TAP TO RETRY', 'offline');
+        btnConnect.disabled = false;
+    }
+}
+
+// ── Socket.IO — CRITICAL FIX: use polling first for Nginx proxy ───────
+function openSocket() {
+    if (typeof io === 'undefined') {
+        log('Waiting for Socket.IO...', 'warn');
+        setTimeout(openSocket, 500);
+        return;
+    }
+    if (socket) { socket.disconnect(); socket = null; }
+
+    setStatus('CONNECTING TO MEKA...', 'pending');
+    socketConnectAttempts = 0;
+
+    // IMPORTANT: Use polling FIRST — required for Nginx proxy compatibility.
+    // 'websocket' first fails when going through a reverse proxy that
+    // doesn't support WebSocket upgrade on polling path.
+    // Also: do NOT specify path option — let socket.io use the default /socket.io
+    socket = io(window.location.origin, {
+        transports: ['polling', 'websocket'],
+        upgrade: true,
+        rememberUpgrade: true,
+        reconnection: true,
+        reconnectionDelay: 2000,
+        reconnectionAttempts: Infinity,
+        timeout: 20000,
+    });
+
+    socket.on('connect', () => {
+        isConnected = true;
+        socketConnectAttempts = 0;
+        setStatus('NEURAL LINK ACTIVE', 'online');
+        statusIp.textContent = window.location.hostname;
+        btnConnect.disabled = true;
+        btnDisconn.disabled = false;
+        log('✅ Connected — Socket ID: ' + socket.id, 'ok');
+
+        // Register device with capabilities and camera info
+        socket.emit('phone_register', {
+            capabilities: { camera: shareCamera, microphone: shareMic, speaker: shareSpeaker, screen: shareScreen },
+            device: navigator.userAgent,
+            cameras: allCameras.map((d,i) => ({ id: d.deviceId, label: d.label || 'Camera '+(i+1) })),
+        });
+
+        // Start JPEG frame capture
+        if (shareCamera && camStream) startFrameCapture();
+    });
+
+    socket.on('disconnect', (reason) => {
+        isConnected = false;
+        setStatus('RECONNECTING...', 'offline');
+        btnConnect.disabled = false;
+        btnDisconn.disabled = true;
+        updateSensorCard('Cam', false, 'STANDBY');
+        stopFrameCapture();
+        log('Disconnected: ' + reason, 'warn');
+    });
+
+    socket.on('connect_error', (e) => {
+        socketConnectAttempts++;
+        log(`Connect error (attempt ${socketConnectAttempts}): ${e.message}`, 'err');
+        if (socketConnectAttempts === 1) {
+            setStatus('CONNECTION FAILED — RETRYING...', 'pending');
+        }
+    });
+
+    socket.on('hub_command', handleHubCommand);
+
+    socket.on('webrtc_answer', async (data) => {
+        try {
+            if (camPeer && data.sdp) await camPeer.setRemoteDescription({ type: 'answer', sdp: data.sdp });
+        } catch(e) { log('WebRTC answer error: '+e.message,'err'); }
+    });
+    socket.on('webrtc_ice', async (data) => {
+        try {
+            if (camPeer && data.candidate) await camPeer.addIceCandidate(data.candidate);
+        } catch(e) {}
+    });
+}
+
+// ── WebRTC peers ──────────────────────────────────────────────────────
+const STUN = { iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+]};
+let camPeer = null;
+
+// ── Hub command handler ───────────────────────────────────────────────
+function handleHubCommand(msg) {
+    if (!msg?.type) return;
+    switch(msg.type) {
+        case 'tts':
+            if (shareSpeaker && msg.text) {
+                const u = new SpeechSynthesisUtterance(msg.text);
+                u.lang = 'en-US'; u.rate = 0.95;
+                speechSynthesis.speak(u);
+                updateSensorCard('Spk', true, 'SPEAKING');
+                setTimeout(() => updateSensorCard('Spk', true, 'READY'), 3000);
+                log('🗣️ TTS: ' + msg.text.substring(0,50), 'ok');
+            }
+            break;
+        case 'play_audio':
+            if (shareSpeaker && msg.url) {
+                new Audio(msg.url).play().catch(()=>{});
+            }
+            break;
+        case 'camera_flip':
+            flipCamera();
+            break;
+        case 'camera_switch':
+            if (msg.device_id) switchToCam(msg.device_id);
+            break;
+        case 'screen_start':
+            if (!screenStream) requestScreenShare();
+            break;
+        case 'screen_stop':
+            stopScreenShare();
+            break;
+        case 'show_permission':
+        case 'show_permission_popup':
+            if (!localStorage.getItem('meka_granted')) {
+                document.getElementById('modalPerm').classList.remove('hidden');
+            }
+            break;
+        default:
+            log('Hub cmd: ' + msg.type, 'info');
+    }
+}
+
+// ── JPEG Frame capture (camera → hub) ─────────────────────────────────
+const frameCanvas = document.createElement('canvas');
+const frameCtxC   = frameCanvas.getContext('2d');
+
+function startFrameCapture() {
+    stopFrameCapture();
+    captureInterval = setInterval(() => {
+        if (!isConnected || !socket?.connected || !camStream || !videoEl.videoWidth) return;
+        frameCanvas.width  = Math.min(videoEl.videoWidth, 640);
+        frameCanvas.height = Math.min(videoEl.videoHeight, 480);
+        frameCtxC.drawImage(videoEl, 0, 0, frameCanvas.width, frameCanvas.height);
+        frameCanvas.toBlob(blob => {
+            if (blob) blob.arrayBuffer().then(buf => socket.emit('phone_frame', buf));
+        }, 'image/jpeg', 0.5);
+    }, 200); // 5 fps
+}
+
+function stopFrameCapture() {
+    if (captureInterval) { clearInterval(captureInterval); captureInterval = null; }
+}
+
+// ── Screen Share ───────────────────────────────────────────────────────
+// Works on: desktop Chrome/Edge/Firefox, Android Chrome (limited), some tablets.
+// On iOS Safari: getDisplayMedia is available from iOS 16+ in certain contexts.
+async function requestScreenShare() {
+    if (screenStream) { stopScreenShare(); return; }
+
+    // Check if getDisplayMedia is available
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+        log('Screen share: getDisplayMedia not available on this browser/OS', 'err');
+        updateSensorCard('Screen', false, 'BROWSER N/A', true);
+        alert('Screen share is not supported by this browser.\n\nTry using Chrome on desktop or Android Chrome.');
+        return;
+    }
+
+    try {
+        log('Requesting screen share permission...', 'info');
+        updateSensorCard('Screen', false, 'REQUESTING...', true);
+
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+                width: { ideal: 1920, max: 1920 },
+                height: { ideal: 1080, max: 1080 },
+                frameRate: { ideal: 10, max: 15 }
+            },
+            audio: false
+        });
+
+        screenVideo.srcObject = screenStream;
+
+        // When user stops screen share via browser UI
+        screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+            stopScreenShare();
+        });
+
+        // Show preview canvas
+        screenWrap.classList.add('visible');
+        screenTip.classList.add('show');
+
+        updateSensorCard('Screen', true, 'SHARING', true);
+        btnScreen.textContent = '⏹️ STOP SCREEN';
+        log('🖥️ Screen share active', 'ok');
+
+        // Start sending screen frames
+        startScreenCapture();
+
+    } catch(e) {
+        screenStream = null;
+        if (e.name === 'NotAllowedError') {
+            log('Screen share denied by user', 'warn');
+            updateSensorCard('Screen', false, 'DENIED', true);
+        } else if (e.name === 'NotSupportedError') {
+            log('Screen share not supported: ' + e.message, 'err');
+            updateSensorCard('Screen', false, 'NOT SUPPORTED', true);
+        } else {
+            log('Screen share error: ' + e.message, 'err');
+            updateSensorCard('Screen', false, 'FAILED', true);
+        }
+        btnScreen.textContent = '🖥️ SCREEN SHARE';
+    }
+}
+
+function startScreenCapture() {
+    if (screenInterval) clearInterval(screenInterval);
+    screenInterval = setInterval(() => {
+        if (!screenStream || !socket?.connected) return;
+        const sw = screenVideo.videoWidth;
+        const sh = screenVideo.videoHeight;
+        if (!sw || !sh) return;
+
+        // Draw to preview canvas
+        screenCanvas.width  = Math.min(sw, 960);
+        screenCanvas.height = Math.round(sh * (screenCanvas.width / sw));
+        screenCtx.drawImage(screenVideo, 0, 0, screenCanvas.width, screenCanvas.height);
+
+        // Send to hub
+        screenCanvas.toBlob(blob => {
+            if (blob) blob.arrayBuffer().then(buf => socket?.emit('phone_screen_frame', buf));
+        }, 'image/jpeg', 0.45);
+    }, 250); // 4 fps for screen
+}
+
+function stopScreenShare() {
+    if (screenStream) {
+        screenStream.getTracks().forEach(t => t.stop());
+        screenStream = null;
+    }
+    if (screenInterval) { clearInterval(screenInterval); screenInterval = null; }
+    screenVideo.srcObject = null;
+    screenWrap.classList.remove('visible');
+    screenTip.classList.remove('show');
+    updateSensorCard('Screen', false, 'STANDBY', true);
+    btnScreen.textContent = '🖥️ SCREEN SHARE';
+    log('Screen share stopped');
+}
+
+// ── Mic PCM streaming ─────────────────────────────────────────────────
+let analyserInterval = null;
+
+function startMicCapture(stream) {
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const src = audioCtx.createMediaStreamSource(stream);
+        audioAnalyser = audioCtx.createAnalyser();
+        audioAnalyser.fftSize = 256;
+        audioProcessor = audioCtx.createScriptProcessor(2048, 1, 1);
+
+        audioProcessor.onaudioprocess = (e) => {
+            if (!isConnected || !socket?.connected) return;
+            const data = e.inputBuffer.getChannelData(0);
+            const pcm = new Int16Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                const s = Math.max(-1, Math.min(1, data[i]));
+                pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            socket.emit('phone_audio', pcm.buffer);
+        };
+
+        src.connect(audioAnalyser);
+        src.connect(audioProcessor);
+        audioProcessor.connect(audioCtx.destination);
+
+        const levelData = new Uint8Array(audioAnalyser.frequencyBinCount);
+        analyserInterval = setInterval(() => {
+            audioAnalyser.getByteFrequencyData(levelData);
+            const avg = levelData.reduce((a,b) => a+b, 0) / levelData.length;
+            audioBarFill.style.width = Math.min(100, avg * 2) + '%';
+        }, 80);
+
+        log('🎤 Mic PCM streaming at 16kHz', 'ok');
+    } catch(e) {
+        log('Mic capture error: ' + e.message, 'err');
+    }
+}
+
+function stopMicCapture() {
+    if (analyserInterval) { clearInterval(analyserInterval); analyserInterval = null; }
+    if (audioProcessor) { try { audioProcessor.disconnect(); } catch(e){} audioProcessor = null; }
+    if (audioCtx) { try { audioCtx.close(); } catch(e){} audioCtx = null; }
+    audioBarFill.style.width = '0%';
+}
+
+// ── Camera flip & switch ──────────────────────────────────────────────
+async function flipCamera() {
+    if (!camStream) return;
+    const tracks = camStream.getVideoTracks();
+    const current = tracks[0]?.getSettings()?.facingMode || 'environment';
+    const next = current === 'environment' ? 'user' : 'environment';
+    try {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: next, width:{ideal:1280}, height:{ideal:720} }, audio: false
+        });
+        videoEl.srcObject = camStream;
+        log('Camera flipped to ' + (next === 'user' ? 'FRONT' : 'REAR'), 'ok');
+    } catch(e) {
+        log('Flip failed: ' + e.message, 'err');
+    }
+}
+
+async function switchToCam(deviceId) {
+    if (!deviceId) return;
+    currentCamId = deviceId;
+    try {
+        if (camStream) camStream.getTracks().forEach(t => t.stop());
+        camStream = await getCameraStream(deviceId);
+        videoEl.srcObject = camStream;
+        if (isConnected) startFrameCapture();
+        log('Switched to: ' + (allCameras.find(c => c.deviceId === deviceId)?.label || deviceId), 'ok');
+    } catch(e) {
+        log('Camera switch failed: ' + e.message, 'err');
+    }
+}
+
+// ── Toggle sensor cards ────────────────────────────────────────────────
+function toggleSensor(type) {
+    if (!isConnected && type !== 'speaker') {
+        log('Connect first before toggling sensors', 'warn');
+        return;
+    }
+    if (type === 'camera') {
+        shareCamera = !shareCamera;
+        updateSensorCard('Cam', shareCamera, shareCamera ? 'ACTIVE' : 'OFF');
+        if (!shareCamera) { stopFrameCapture(); videoWrap.classList.remove('visible'); }
+        else if (camStream) { videoWrap.classList.add('visible'); startFrameCapture(); }
+    } else if (type === 'mic') {
+        shareMic = !shareMic;
+        updateSensorCard('Mic', shareMic, shareMic ? 'STREAMING' : 'OFF');
+        if (!shareMic) { stopMicCapture(); audioBarWrap.classList.remove('show'); }
+        else if (micStream) { startMicCapture(micStream); audioBarWrap.classList.add('show'); }
+    } else if (type === 'speaker') {
+        shareSpeaker = !shareSpeaker;
+        updateSensorCard('Spk', shareSpeaker, shareSpeaker ? 'READY' : 'OFF');
+    }
+}
+
+// ── Disconnect ────────────────────────────────────────────────────────
+function disconnectAll() {
+    stopFrameCapture();
+    stopScreenShare();
+    stopMicCapture();
+    if (camStream)  { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    if (micStream)  { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    if (socket)     { socket.disconnect(); socket = null; }
+    isConnected = false;
+    videoWrap.classList.remove('visible');
+    setStatus('DISCONNECTED', 'offline');
+    statusIp.textContent = '';
+    btnConnect.disabled = false;
+    btnDisconn.disabled = true;
+    btnFlip.disabled = true;
+    btnScreen.disabled = true;
+    updateSensorCard('Cam', false, 'STANDBY');
+    updateSensorCard('Mic', false, 'STANDBY');
+    updateSensorCard('Screen', false, 'STANDBY', true);
+    log('Disconnected from MEKA', 'warn');
+}
+
+// ── Auto-start ────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+    if (!checkSecureContext()) return;
+
+    if (localStorage.getItem('meka_granted')) {
+        setTimeout(() => startConnect(), 600);
+    } else {
+        document.getElementById('modalPerm').classList.remove('hidden');
+    }
+});
+</script>
+</body>
+</html>

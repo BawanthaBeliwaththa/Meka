@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  future-ai:
+    build: 
+      context: ./Future-AI
+    container_name: meka-future-ai
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    volumes:
+      - ./Future-AI/iot_hub/data:/app/data
+
+  webapp:
+    build:
+      context: ./Webapp
+    container_name: meka-webapp
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - future-ai
+
+  telegram-bot:
+    build:
+      context: ./Telegram
+    container_name: meka-telegram-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./Telegram/firebase-adminsdk.json:/app/firebase-adminsdk.json
+    depends_on:
+      - future-ai

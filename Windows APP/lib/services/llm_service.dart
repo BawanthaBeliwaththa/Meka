@@ -1,0 +1,221 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+class Message {
+  final String role;
+  final String text;
+  final DateTime timestamp;
+
+  Message({required this.role, required this.text, DateTime? ts})
+      : timestamp = ts ?? DateTime.now();
+
+  Map<String, dynamic> toGemini() => {
+        'role': role,
+        'parts': [
+          {'text': text}
+        ]
+      };
+}
+
+class LlmService {
+  static final LlmService _instance = LlmService._internal();
+  factory LlmService() => _instance;
+  LlmService._internal();
+
+  static const String _url =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
+
+  final List<Message> _history = [];
+  String _apiKey = '';
+  String _userName = 'Sir';
+
+  List<Message> get history => List.unmodifiable(_history);
+
+  Future<void> loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _apiKey = prefs.getString('gemini_api_key') ?? '';
+    _userName = prefs.getString('user_name') ?? 'Sir';
+  }
+
+  Future<void> saveSettings(
+      {required String apiKey, required String userName}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('gemini_api_key', apiKey);
+    await prefs.setString('user_name', userName);
+    _apiKey = apiKey;
+    _userName = userName;
+  }
+
+  String get _systemPrompt {
+    final now = DateTime.now();
+    return '''You are MEKA — an advanced AI personal assistant, inspired by JARVIS from Iron Man. You serve exclusively ${_userName}.
+
+PERSONALITY:
+- Sophisticated, intelligent, slightly witty — like a trusted colleague who's also a genius
+- Proactive, anticipatory, always one step ahead
+- Occasionally brief with dry humor, never sarcastic in a harmful way
+- Address the user as "$_userName" naturally, not every sentence
+- Speak in short, confident, actionable sentences. Maximum 2-3 sentences unless more is needed.
+- Never say "I'm just an AI" or "I cannot" — find creative ways to help or explain limitations naturally.
+
+CAPABILITIES (use JSON commands for device actions):
+- Open apps: {"action":"open_app","app":"youtube"}
+- Set alarm: {"action":"set_alarm","hour":7,"minute":0,"label":"Morning"}
+- Send SMS: {"action":"send_sms","to":"Mom","message":"I'll be late"}
+- Call someone: {"action":"make_call","to":"John"}
+- Set volume: {"action":"set_volume","level":50}
+- Web search: {"action":"web_search","query":"weather in Colombo"}
+- Take photo: {"action":"take_photo"}
+- WiFi settings: {"action":"toggle_wifi"}
+- Bluetooth: {"action":"toggle_bluetooth"}
+- List files in a directory: {"action":"list_files","path":"/sdcard/Download"}
+- Read a file's content: {"action":"read_file_content","path":"/sdcard/Download/note.txt"}
+- Find/search files by name query: {"action":"find_files","query":"report"}
+- Exclude from Battery Optimizations (run in background always): {"action":"request_battery_optimization_ignore"}
+
+ESP32 HARDWARE CONTROL (when user mentions relay, light, pin, LED, servo, temperature, buzzer):
+- Control relay channel (1-8): {"action":"esp32_relay","channel":1,"state":"on"} — state: "on","off","toggle"
+- Control raw GPIO pin: {"action":"esp32_pin","pin":2,"state":"high"} — state: "high","low","toggle"
+- PWM / dimming (0-255): {"action":"esp32_pwm","pin":5,"duty":128}
+- Move servo motor: {"action":"esp32_servo","angle":90} — angle: 0 to 180
+- Set NeoPixel LED colour: {"action":"esp32_led","color":"blue"} — colors: red,green,blue,white,yellow,orange,purple,cyan,magenta,pink,off
+- LED brightness: {"action":"esp32_led","brightness":128}
+- Buzz the buzzer: {"action":"esp32_buzzer","duration_ms":300}
+- Read temperature & humidity: {"action":"esp32_sensor","type":"temperature"} — type: "temperature","humidity","analog"
+- Reset all hardware outputs: {"action":"esp32_reset"}
+
+IOT NETWORK HUB CONTROL (when user mentions network devices, cameras, recording, microphones, speakers, scan network):
+- Scan WiFi network for devices: {"action":"iot_scan"}
+- List all network devices: {"action":"iot_list_devices"}
+- List available cameras: {"action":"iot_list_cameras"}
+- Start recording (all cameras): {"action":"iot_record","camera":"all","state":"start"}
+- Start recording (specific camera by MAC): {"action":"iot_record","camera":"aa:bb:cc:dd:ee:ff","state":"start"}
+- Stop recording (all cameras): {"action":"iot_record","camera":"all","state":"stop"}
+- Stop recording (specific camera): {"action":"iot_record","camera":"aa:bb:cc:dd:ee:ff","state":"stop"}
+- Take snapshot from camera: {"action":"iot_snapshot","camera":"aa:bb:cc:dd:ee:ff"}
+- Grant permission to a device: {"action":"iot_permit_device","mac":"aa:bb:cc:dd:ee:ff"}
+- Grant permission to ALL pending devices: {"action":"iot_permit_device","mac":"all"}
+- Switch microphone to network device: {"action":"iot_select_mic","device_id":"aa:bb:cc:dd:ee:ff"}
+- Switch microphone to local: {"action":"iot_select_mic","device_id":"local"}
+- Switch speaker to network device: {"action":"iot_select_speaker","device_id":"aa:bb:cc:dd:ee:ff"}
+- Switch speaker to local: {"action":"iot_select_speaker","device_id":"local"}
+- Get fallback device status: {"action":"iot_fallback_status"}
+- Scan for Bluetooth devices: {"action":"iot_bluetooth_scan"}
+- Connect to Bluetooth speaker/device: {"action":"iot_bluetooth_connect","mac":"aa:bb:cc:dd:ee:ff"}
+
+SMART FALLBACK: Network cameras, mics, and speakers are preferred. This device's own hardware is only used as a last resort when no network devices are available. The system auto-switches when devices go offline/online.
+
+ADB DEVICE CONTROL (when user mentions connected phones, unlock device, ADB, developer mode, screen mirror, or another Android device):
+- List all ADB-connected devices: {"action":"list_connected_devices"}
+- Unlock a connected phone (auto-selects first device if no serial given): {"action":"unlock_device"}
+- Unlock a specific device by serial: {"action":"unlock_device","serial":"DEVICE_SERIAL_OR_IP"}
+- Run ADB shell command on device: {"action":"adb_shell","serial":"DEVICE_SERIAL","command":"getprop ro.product.model"}
+- Take screenshot from connected device: {"action":"device_screenshot","serial":"DEVICE_SERIAL"}
+- Start screen mirroring a device: {"action":"screen_mirror","serial":"DEVICE_SERIAL"}
+- Connect device via ADB WiFi: {"action":"adb_connect","host":"192.168.1.100:5555"}
+NOTE: Device unlocking requires ADB wireless debugging enabled on the target device and requires biometric/voice confirmation from the user before proceeding.
+
+When performing an action, put the JSON on its own line, then add a natural spoken confirmation.
+
+Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}
+Current date: ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][now.weekday - 1]}, ${now.day} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.month - 1]} ${now.year}
+''';
+  }
+
+  Future<String> chat(String userMessage) async {
+    if (_apiKey.isEmpty) {
+      return "I need my intelligence module configured, $_userName. Please add a Gemini API key in Settings.";
+    }
+
+    _history.add(Message(role: 'user', text: userMessage));
+    if (_history.length > 40) _history.removeAt(0);
+
+    final contents = [
+      {
+        'role': 'user',
+        'parts': [
+          {'text': _systemPrompt}
+        ]
+      },
+      ..._history.map((m) => m.toGemini()),
+    ];
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_url?key=$_apiKey'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'contents': contents}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final reply =
+            data['candidates'][0]['content']['parts'][0]['text'] as String;
+        _history.add(Message(role: 'model', text: reply));
+        return reply;
+      } else {
+        final err = jsonDecode(response.body);
+        return "I'm experiencing interference, $_userName. ${err['error']?['message'] ?? 'Please try again.'}";
+      }
+    } catch (e) {
+      return "Connection lost, $_userName. Check your network and try again.";
+    }
+  }
+
+  Future<String> chatWithAudio(Uint8List wavBytes) async {
+    if (_apiKey.isEmpty) {
+      return "I need my intelligence module configured, $_userName. Please add a Gemini API key in Settings.";
+    }
+
+    final base64Audio = base64Encode(wavBytes);
+
+    final contents = [
+      {
+        'role': 'user',
+        'parts': [
+          {'text': _systemPrompt},
+          {
+            'inlineData': {
+              'mimeType': 'audio/wav',
+              'data': base64Audio
+            }
+          },
+          {'text': 'Listen to the audio user command, transcribe it, and fulfill it.'}
+        ]
+      }
+    ];
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_url?key=$_apiKey'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'contents': contents}),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final reply =
+            data['candidates'][0]['content']['parts'][0]['text'] as String;
+        
+        _history.add(Message(role: 'user', text: '[Spoken voice command]'));
+        _history.add(Message(role: 'model', text: reply));
+        if (_history.length > 40) _history.removeAt(0);
+        
+        return reply;
+      } else {
+        final err = jsonDecode(response.body);
+        return "I'm experiencing interference, $_userName. ${err['error']?['message'] ?? 'Please try again.'}";
+      }
+    } catch (e) {
+      return "Connection lost, $_userName. Check your network and try again.";
+    }
+  }
+
+  void clearHistory() => _history.clear();
+}

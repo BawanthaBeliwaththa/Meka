@@ -1,0 +1,266 @@
+name: 🚀 Build & Release — MEKA Multi-Platform (Android, Windows, Linux)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Android APK Build ───────────────────────────────────────────────────────
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: ./Android APP
+        run: flutter pub get
+
+      - name: Build Universal & Split APKs
+        working-directory: ./Android APP
+        run: |
+          flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+          flutter build apk --release --split-per-abi --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+
+      - name: Prepare APK Artifacts
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-${VERSION}-Android-Universal.apk"
+          mv "Android APP/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "MEKA-${VERSION}-Android-arm64.apk" || true
+          mv "Android APP/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "MEKA-${VERSION}-Android-arm32.apk" || true
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-builds
+          path: MEKA-*-Android-*.apk
+
+  # ── Windows App Build ──────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows Client
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: ./Windows APP
+        run: flutter pub get
+
+      - name: Build Windows Release
+        working-directory: ./Windows APP
+        run: flutter build windows --release --build-name=${{ github.ref_name }} --build-number=${{ github.run_number }}
+
+      - name: Create Portable ZIP
+        run: |
+          $version = "${{ github.ref_name }}"
+          Compress-Archive -Path "Windows APP\build\windows\x64\runner\Release\*" -DestinationPath "MEKA-${version}-Windows-Portable.zip"
+
+      - name: Build NSIS Setup Installer
+        run: |
+          choco install nsis -y --no-progress
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $nsis = @"
+          !define PRODUCT_NAME "MEKA"
+          !define PRODUCT_VERSION "$version"
+          Name "`${PRODUCT_NAME} `${PRODUCT_VERSION}"
+          OutFile "MEKA-${{ github.ref_name }}-Windows-Setup.exe"
+          InstallDir "`$PROGRAMFILES64\MEKA"
+          Page directory
+          Page instfiles
+          Section "MEKA"
+            SetOutPath "`$INSTDIR"
+            File /r "Windows APP\build\windows\x64\runner\Release\*"
+            CreateDirectory "`$SMPROGRAMS\MEKA"
+            CreateShortcut "`$SMPROGRAMS\MEKA\MEKA.lnk" "`$INSTDIR\meka_desktop.exe"
+            CreateShortcut "`$DESKTOP\MEKA.lnk" "`$INSTDIR\meka_desktop.exe"
+          SectionEnd
+          "@
+          $nsis | Out-File -Encoding ASCII -FilePath "installer.nsi"
+          makensis installer.nsi
+        continue-on-error: true
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: MEKA-*-Windows-*
+
+  # ── Linux App Build ────────────────────────────────────────────────────────
+  build-linux:
+    name: Build Linux Client
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libayatana-appindicator3-dev libsecret-1-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            dpkg-dev fakeroot
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Linux Desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Install dependencies
+        working-directory: ./Linux APP
+        run: flutter pub get
+
+      - name: Build Linux Release
+        working-directory: ./Linux APP
+        run: flutter build linux --release --build-name=${GITHUB_REF_NAME#v} --build-number=${{ github.run_number }}
+
+      - name: Package .deb and tar.gz
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          PKG_DIR=meka-deb-pkg
+
+          mkdir -p ${PKG_DIR}/DEBIAN ${PKG_DIR}/usr/lib/meka ${PKG_DIR}/usr/bin ${PKG_DIR}/usr/share/applications
+
+          cp -r "Linux APP/build/linux/x64/release/bundle/"* ${PKG_DIR}/usr/lib/meka/
+          ln -sf /usr/lib/meka/meka_linux ${PKG_DIR}/usr/bin/meka
+
+          cat > ${PKG_DIR}/usr/share/applications/meka.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=MEKA
+          Comment=MEKA Smart Home AI Assistant
+          Exec=/usr/lib/meka/meka_linux
+          Icon=utility
+          Terminal=false
+          Categories=Utility;Network;
+          EOF
+
+          cat > ${PKG_DIR}/DEBIAN/control << EOF
+          Package: meka
+          Version: ${VERSION}
+          Architecture: amd64
+          Maintainer: Project MEKA <hello@project-meka.dev>
+          Depends: libgtk-3-0, libgstreamer1.0-0
+          Section: utils
+          Priority: optional
+          Description: MEKA AI Personal Assistant & Smart Home Controller
+          EOF
+
+          dpkg-deb --build ${PKG_DIR} "MEKA-${GITHUB_REF_NAME}-Linux-amd64.deb"
+
+          # Portable tarball
+          TAR_DIR="MEKA-${GITHUB_REF_NAME}-Linux"
+          mkdir -p ${TAR_DIR}
+          cp -r "Linux APP/build/linux/x64/release/bundle/"* ${TAR_DIR}/
+          tar -czf "${TAR_DIR}.tar.gz" ${TAR_DIR}/
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            MEKA-*-Linux-*.deb
+            MEKA-*-Linux.tar.gz
+
+  # ── Unified GitHub Release ──────────────────────────────────────────────────
+  publish-release:
+    name: Publish Unified GitHub Release
+    needs: [build-android, build-windows, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🤖 MEKA ${{ github.ref_name }} — Universal Release (Android, Windows, Linux)"
+          body: |
+            # 🚀 MEKA ${{ github.ref_name }} — Multi-Platform Release
+
+            Welcome to the official release of **MEKA** (Master Electronic Kinetic Assistant) across all supported platforms!
+
+            ---
+
+            ### 📱 Android Mobile Client
+            | Package | Description | Recommended? |
+            |---------|-------------|:---:|
+            | `MEKA-${{ github.ref_name }}-Android-Universal.apk` | Universal APK for all Android devices (Android 7.0+) | ✅ |
+            | `MEKA-${{ github.ref_name }}-Android-arm64.apk` | 64-bit ARM devices only | ⚡ |
+            | `MEKA-${{ github.ref_name }}-Android-arm32.apk` | 32-bit legacy ARM devices | |
+
+            ---
+
+            ### 🖥️ Windows Desktop Client
+            | Package | Description | Recommended? |
+            |---------|-------------|:---:|
+            | `MEKA-${{ github.ref_name }}-Windows-Setup.exe` | Windows Installer (Desktop & Start menu shortcuts) | ✅ |
+            | `MEKA-${{ github.ref_name }}-Windows-Portable.zip` | Portable ZIP (Extract and run without installing) | ⚡ |
+
+            ---
+
+            ### 🐧 Linux Desktop Client
+            | Package | Description | Recommended? |
+            |---------|-------------|:---:|
+            | `MEKA-${{ github.ref_name }}-Linux-amd64.deb` | Debian / Ubuntu / Linux Mint package | ✅ |
+            | `MEKA-${{ github.ref_name }}-Linux.tar.gz` | Universal Linux Portable tarball | ⚡ |
+
+            ---
+
+            ### ⚡ Quick Start
+            1. Download the package for your OS above.
+            2. Launch MEKA and connect to your **MEKA IoT Hub** (local IP or cloud VPS URL).
+            3. Monitor ESP32 hardware nodes, control smart home devices, and use voice AI assistant features!
+
+            ---
+            *Project MEKA — Open Source Smart Home AI Assistant*
+          files: release-assets/*
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

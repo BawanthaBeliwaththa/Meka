@@ -1,0 +1,99 @@
+name: 🤖 Build & Release — Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'          # Triggers on tags like v3.0.0, v3.1.2-beta
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Flutter Setup ─────────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── Code analysis ─────────────────────────────────────────────────────
+      - name: Run Flutter analyze
+        run: flutter analyze --no-fatal-warnings || true
+
+      # ── Build APKs ────────────────────────────────────────────────────────
+      - name: Build fat APK (all architectures)
+        run: |
+          flutter build apk --release \
+            --build-name=${GITHUB_REF_NAME#v} \
+            --build-number=${{ github.run_number }}
+
+      - name: Build split APKs (per-ABI)
+        run: |
+          flutter build apk --release --split-per-abi \
+            --build-name=${GITHUB_REF_NAME#v} \
+            --build-number=${{ github.run_number }}
+
+      # ── Rename artifacts ──────────────────────────────────────────────────
+      - name: Rename APKs for release
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             MEKA-${VERSION}-universal.apk
+          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+             MEKA-${VERSION}-arm64.apk || true
+          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+             MEKA-${VERSION}-arm32.apk || true
+          mv build/app/outputs/flutter-apk/app-x86_64-release.apk \
+             MEKA-${VERSION}-x86_64.apk || true
+          ls -la MEKA-*.apk
+
+      # ── Publish GitHub Release ────────────────────────────────────────────
+      - name: Create GitHub Release with APKs
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🤖 MEKA Android ${{ github.ref_name }}"
+          body: |
+            ## 📱 MEKA Android App ${{ github.ref_name }}
+
+            ### ⬇️ Download & Install
+
+            | File | Description | Recommended? |
+            |------|-------------|:---:|
+            | `MEKA-${{ github.ref_name }}-universal.apk` | All Android devices (arm32 + arm64 + x86_64) | ✅ |
+            | `MEKA-${{ github.ref_name }}-arm64.apk` | 64-bit devices only (smaller, faster) | ⚡ |
+            | `MEKA-${{ github.ref_name }}-arm32.apk` | 32-bit (older) Android devices | |
+            | `MEKA-${{ github.ref_name }}-x86_64.apk` | Android emulators & Intel tablets | |
+
+            ### 🚀 Installation Steps
+            1. **Download** the `universal.apk` (or the matching ABI for your device)
+            2. Go to **Settings → Security** → Enable **"Install from unknown sources"** (or "Install unknown apps")
+            3. Open the downloaded APK and tap **Install**
+            4. Launch MEKA and follow the setup wizard to connect to your hub
+
+            ### 📋 Requirements
+            - Android **7.0+** (API level 24 or higher)
+            - Microphone permission (for voice wake word)
+            - Wi-Fi connection to your MEKA IoT Hub
+
+            ### 🔗 Links
+            - [Setup Guide](https://github.com/project-meka/.github/blob/main/SETUP.md)
+            - [Report a Bug](https://github.com/project-meka/Android-APP/issues)
+          files: |
+            MEKA-*.apk
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

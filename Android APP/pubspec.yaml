@@ -1,0 +1,49 @@
+name: meka
+description: Meka — Your personal AI assistant. Always listening, always ready.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  google_fonts: ^6.1.0
+
+  # Audio & TTS
+  record: ^5.0.5
+  flutter_tts: ^3.8.3
+
+  # Speech Recognition
+  speech_to_text: ^6.6.0
+
+  # Permissions
+  permission_handler: ^11.3.1
+
+  # Networking & AI
+  http: ^1.2.0
+  web_socket_channel: ^2.4.0
+
+  # Storage
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.1
+
+  # Keep CPU awake while listening
+  wakelock_plus: ^1.2.8
+
+  # QR code scanner for hub onboarding
+  mobile_scanner: ^5.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.png

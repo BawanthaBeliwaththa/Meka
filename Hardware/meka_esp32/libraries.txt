@@ -1,0 +1,8 @@
+ESPAsyncWebServer
+AsyncTCP
+ArduinoJson
+DHT sensor library
+Adafruit NeoPixel
+ESP32Servo
+Adafruit GFX Library
+Adafruit SSD1306

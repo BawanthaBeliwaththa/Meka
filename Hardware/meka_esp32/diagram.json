@@ -1,0 +1,539 @@
+{
+  "version": 1,
+  "author": "Antigravity",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "builder": "esp32-core-2.0.14"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": -95.7,
+      "left": 234.6,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel-strip",
+      "id": "neo",
+      "top": 150,
+      "left": 200,
+      "attrs": {
+        "pixels": "8"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buz",
+      "top": -103.2,
+      "left": -151.8,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo",
+      "top": 170.8,
+      "left": -240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "top": -279.7,
+      "left": 67,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 109.55,
+      "left": 172.8,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_neo",
+      "top": 224.75,
+      "left": 355.2,
+      "attrs": {
+        "value": "330"
+      }
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled",
+      "top": -16.06,
+      "left": 336.23,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_blue",
+      "top": 300,
+      "left": -50,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_yellow",
+      "top": 300,
+      "left": -10,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_green",
+      "top": 300,
+      "left": 30,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_red",
+      "top": 300,
+      "left": 70,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-analog-mic",
+      "id": "mic",
+      "top": 150,
+      "left": -150,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "speaker",
+      "top": 200,
+      "left": -150,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "esp:4",
+      "dht:SDA",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "r1:2",
+      "esp:4",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:13",
+      "r_neo:1",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "r_neo:2",
+      "neo:DIN",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:5V",
+      "neo:VDD",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.2",
+      "neo:VSS",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:15",
+      "buz:PIN",
+      "orange",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "buz:GND",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:18",
+      "servo:PWM",
+      "orange",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:5V",
+      "servo:V+",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:34",
+      "pot:SIG",
+      "yellow",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:21",
+      "oled:SDA",
+      "green",
+      []
+    ],
+    [
+      "esp:22",
+      "oled:SCL",
+      "green",
+      []
+    ],
+    [
+      "servo:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "h9.6",
+        "v-57.6"
+      ]
+    ],
+    [
+      "servo:V+",
+      "esp:3V3",
+      "red",
+      [
+        "h-19.2",
+        "v-95.9",
+        "h240",
+        "v48",
+        "h0",
+        "v38.4",
+        "h144",
+        "v-67.2"
+      ]
+    ],
+    [
+      "servo:PWM",
+      "esp:D18",
+      "green",
+      [
+        "h-19.2",
+        "v19.4",
+        "h393.6",
+        "v-182.4"
+      ]
+    ],
+    [
+      "oled:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "v-134.4",
+        "h-585.6",
+        "v297.6"
+      ]
+    ],
+    [
+      "oled:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "v-19.2",
+        "h96.15",
+        "v192"
+      ]
+    ],
+    [
+      "oled:SCL",
+      "esp:D22",
+      "green",
+      [
+        "v-28.8",
+        "h-76.5",
+        "v105.6"
+      ]
+    ],
+    [
+      "oled:SDA",
+      "esp:D21",
+      "yellow",
+      [
+        "v-28.8",
+        "h-76.73",
+        "v96"
+      ]
+    ],
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "dht:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "v220.8",
+        "h-316.8",
+        "v-86.4"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "esp:3V3",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r1:2",
+      "esp:3V3",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "r1:1",
+      "dht:SDA",
+      "cyan",
+      [
+        "v-67.2",
+        "h86.4"
+      ]
+    ],
+    [
+      "esp:D15",
+      "buz:2",
+      "magenta",
+      [
+        "h23.5",
+        "v-149.1",
+        "h-9.6"
+      ]
+    ],
+    [
+      "buz:1",
+      "esp:GND.2",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:D4",
+      "r1:1",
+      "cyan",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "pot:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "v38.4",
+        "h-249.6",
+        "v326.4"
+      ]
+    ],
+    [
+      "pot:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "v38.4",
+        "h421.6",
+        "v336"
+      ]
+    ],
+    [
+      "pot:SIG",
+      "esp:D34",
+      "green",
+      [
+        "v192",
+        "h-115.6",
+        "v72.3"
+      ]
+    ],
+    [
+      "esp:D13",
+      "r_neo:1",
+      "green",
+      [
+        "h-14.6",
+        "v71.7"
+      ]
+    ],
+    [
+      "r_neo:2",
+      "dht:NC",
+      "green",
+      [
+        "v-134.4",
+        "h-145.2"
+      ]
+    ],
+    [
+      "esp:26",
+      "led_blue:A",
+      "blue",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:27",
+      "led_yellow:A",
+      "yellow",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:14",
+      "led_green:A",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:12",
+      "led_red:A",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "led_blue:C",
+      "esp:GND.2",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "led_yellow:C",
+      "esp:GND.2",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "led_green:C",
+      "esp:GND.2",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "led_red:C",
+      "esp:GND.2",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "mic:OUT",
+      "esp:34",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "mic:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "mic:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "speaker:2",
+      "esp:15",
+      "orange",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "speaker:1",
+      "esp:GND.1",
+      "black",
+      [
+        "v0"
+      ]
+    ]
+  ],
+  "dependencies": {}
+}

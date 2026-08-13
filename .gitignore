@@ -1,0 +1,77 @@
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+*.iml
+*.ipr
+*.iws
+.idea/
+build/
+**/build/
+Android/
+**/Android/
+*.class
+*.log
+*.pyc
+*.pyo
+__pycache__/
+**/__pycache__/
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+**/.history/
+.svn/
+pubspec.lock
+
+# Embedded / PlatformIO
+.pio/
+**/.pio/
+
+# Node / React / Webapp
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.env
+.env.local
+.env.development.local
+.env.production.local
+ultron-by-sagar-builds-main/
+
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+
+# Large Media & Binary Bundles
+*.gif
+*.webm
+*.mp4
+*.pdf
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# Android binaries
+*.apk
+*.aab
+*.dex
+
+# Windows / Linux binaries
+*.exe
+*.msi
+*.AppImage
+*.deb
+*.rpm
+
+# Key stores & secrets
+*.jks
+*.keystore
+*.pem
+*.key
+firebase-adminsdk.json
+**/firebase-adminsdk.json

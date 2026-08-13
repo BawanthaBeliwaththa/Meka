@@ -1,0 +1,247 @@
+name: 🐧 Build & Release — Linux App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build Linux Packages
+    runs-on: ubuntu-22.04
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── System Dependencies ───────────────────────────────────────────────
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libayatana-appindicator3-dev \
+            libsecret-1-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            dpkg-dev fakeroot \
+            patchelf
+
+      # ── Flutter Setup ─────────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Linux desktop target
+        run: flutter config --enable-linux-desktop
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      - name: Install Dart dependencies
+        run: flutter pub get
+
+      # ── Code Analysis ─────────────────────────────────────────────────────
+      - name: Run Flutter analyze
+        run: flutter analyze --no-fatal-warnings
+        continue-on-error: true
+
+      # ── Build Linux ───────────────────────────────────────────────────────
+      - name: Build Linux release
+        run: |
+          flutter build linux --release \
+            --build-name=${GITHUB_REF_NAME#v} \
+            --build-number=${{ github.run_number }}
+
+      # ── AppImage ──────────────────────────────────────────────────────────
+      - name: Download linuxdeploy for AppImage packaging
+        run: |
+          wget -q "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          chmod +x linuxdeploy-x86_64.AppImage
+          # Work around FUSE in CI
+          ./linuxdeploy-x86_64.AppImage --appimage-extract
+          echo "AppImage extracted to squashfs-root/"
+
+      - name: Create AppDir structure
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+
+          # Copy Flutter build output
+          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+
+          # Create desktop entry
+          cat > AppDir/usr/share/applications/meka.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=MEKA
+          GenericName=AI Personal Assistant
+          Comment=MEKA Smart Home AI Assistant
+          Exec=meka_linux
+          Icon=meka
+          Terminal=false
+          Categories=Utility;Network;
+          StartupWMClass=meka_linux
+          EOF
+
+          # Copy icon if available
+          if [ -f assets/images/logo.png ]; then
+            cp assets/images/logo.png AppDir/usr/share/icons/hicolor/256x256/apps/meka.png
+          else
+            # Create a placeholder 256x256 icon
+            convert -size 256x256 xc:'#010409' -fill '#00D4FF' -draw 'text 80,140 "MEKA"' \
+              AppDir/usr/share/icons/hicolor/256x256/apps/meka.png 2>/dev/null || \
+              touch AppDir/usr/share/icons/hicolor/256x256/apps/meka.png
+          fi
+
+      - name: Package as AppImage
+        run: |
+          VERSION=${{ github.ref_name }}
+          squashfs-root/AppRun \
+            --appdir AppDir \
+            --output appimage \
+            --executable AppDir/usr/bin/meka_linux 2>&1 || true
+
+          # Rename
+          find . -maxdepth 1 -name "*.AppImage" -exec mv {} MEKA-${VERSION}-Linux-x86_64.AppImage \;
+          ls -la MEKA-*.AppImage 2>/dev/null || echo "AppImage creation had issues, using bundle fallback"
+
+      # ── .deb Package ──────────────────────────────────────────────────────
+      - name: Build .deb package
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          PKG_DIR=meka-deb-pkg
+
+          mkdir -p ${PKG_DIR}/DEBIAN
+          mkdir -p ${PKG_DIR}/usr/lib/meka
+          mkdir -p ${PKG_DIR}/usr/bin
+          mkdir -p ${PKG_DIR}/usr/share/applications
+          mkdir -p ${PKG_DIR}/usr/share/icons/hicolor/256x256/apps
+
+          # Copy Flutter build
+          cp -r build/linux/x64/release/bundle/* ${PKG_DIR}/usr/lib/meka/
+
+          # Symlink main binary
+          ln -sf /usr/lib/meka/meka_linux ${PKG_DIR}/usr/bin/meka
+
+          # Desktop entry
+          cat > ${PKG_DIR}/usr/share/applications/meka.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=MEKA
+          GenericName=AI Personal Assistant
+          Comment=MEKA Smart Home AI Assistant & IoT Controller
+          Exec=/usr/lib/meka/meka_linux
+          Icon=meka
+          Terminal=false
+          Categories=Utility;Network;
+          StartupWMClass=meka_linux
+          EOF
+
+          # Control file
+          cat > ${PKG_DIR}/DEBIAN/control << EOF
+          Package: meka
+          Version: ${VERSION}
+          Architecture: amd64
+          Maintainer: Project MEKA <hello@project-meka.dev>
+          Depends: libgtk-3-0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0
+          Section: utils
+          Priority: optional
+          Homepage: https://github.com/project-meka
+          Description: MEKA AI Personal Assistant
+           MEKA is an open-source AI personal assistant and smart home controller.
+           Connect to your MEKA IoT Hub to control ESP32 devices, use voice commands,
+           and manage your smart home from a beautiful cyberpunk desktop interface.
+          EOF
+
+          # Post-install script
+          cat > ${PKG_DIR}/DEBIAN/postinst << 'EOF'
+          #!/bin/sh
+          set -e
+          update-desktop-database /usr/share/applications/ 2>/dev/null || true
+          EOF
+          chmod 755 ${PKG_DIR}/DEBIAN/postinst
+
+          dpkg-deb --build ${PKG_DIR} "meka_${VERSION}_amd64.deb"
+          ls -la meka_*.deb
+
+      # ── Portable TAR.GZ ───────────────────────────────────────────────────
+      - name: Create portable tar.gz
+        run: |
+          VERSION=${{ github.ref_name }}
+          TAR_DIR="MEKA-${VERSION}-Linux"
+          mkdir -p ${TAR_DIR}
+          cp -r build/linux/x64/release/bundle/* ${TAR_DIR}/
+
+          # Add launch script
+          cat > ${TAR_DIR}/run-meka.sh << 'EOF'
+          #!/bin/bash
+          DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          cd "$DIR"
+          ./meka_linux "$@"
+          EOF
+          chmod +x ${TAR_DIR}/run-meka.sh
+
+          tar -czf "${TAR_DIR}.tar.gz" ${TAR_DIR}/
+          ls -la "${TAR_DIR}.tar.gz"
+
+      # ── Publish GitHub Release ────────────────────────────────────────────
+      - name: Create GitHub Release with Linux packages
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🐧 MEKA Linux ${{ github.ref_name }}"
+          body: |
+            ## 🐧 MEKA Linux Desktop App ${{ github.ref_name }}
+
+            ### ⬇️ Download & Install
+
+            | File | Format | Works On | Recommended? |
+            |------|--------|----------|:---:|
+            | `MEKA-${{ github.ref_name }}-Linux-x86_64.AppImage` | AppImage | Any distro (Ubuntu, Fedora, Arch, etc.) | ✅ |
+            | `meka_${{ github.ref_name }}_amd64.deb` | .deb | Debian, Ubuntu, Linux Mint, Pop!_OS | ⚡ |
+            | `MEKA-${{ github.ref_name }}-Linux.tar.gz` | Portable tar.gz | Any distro, manual install | |
+
+            ### 🚀 Install — AppImage (Universal, Recommended)
+            ```bash
+            chmod +x MEKA-${{ github.ref_name }}-Linux-x86_64.AppImage
+            ./MEKA-${{ github.ref_name }}-Linux-x86_64.AppImage
+            ```
+
+            ### 🚀 Install — .deb (Ubuntu/Debian)
+            ```bash
+            sudo dpkg -i meka_${{ github.ref_name }}_amd64.deb
+            sudo apt-get install -f    # Fix any missing dependencies
+            meka                       # Launch from terminal, or find in app menu
+            ```
+
+            ### 🚀 Install — Portable tar.gz
+            ```bash
+            tar -xzf MEKA-${{ github.ref_name }}-Linux.tar.gz
+            cd MEKA-${{ github.ref_name }}-Linux/
+            ./run-meka.sh
+            ```
+
+            ### 📋 Requirements
+            - 64-bit Linux (x86_64) — Ubuntu 20.04+, Fedora 36+, Arch, etc.
+            - GTK3 (`libgtk-3-0`)
+            - GStreamer (for audio: `libgstreamer1.0-0`)
+            - Wi-Fi connection to your MEKA IoT Hub
+
+            ### 🔗 Links
+            - [Setup Guide](https://github.com/project-meka/.github/blob/main/SETUP.md)
+            - [Report a Bug](https://github.com/project-meka/Linux-APP/issues)
+          files: |
+            MEKA-*-Linux-x86_64.AppImage
+            meka_*_amd64.deb
+            MEKA-*-Linux.tar.gz
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

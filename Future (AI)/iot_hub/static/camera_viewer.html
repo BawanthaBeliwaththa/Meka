@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MEKA Live Camera</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Socket.IO client — served by Flask-SocketIO from same origin -->
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --bg: #050710;
+            --card: #0d1117;
+            --border: rgba(255,255,255,0.09);
+            --purple: #7C4DFF;
+            --blue: #00B4FF;
+            --green: #00E676;
+            --red: #FF3D71;
+            --text: #E6EDF3;
+            --dim: #8B949E;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-online  { background: rgba(0,230,118,0.14); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+        .badge-offline { background: rgba(255,61,113,0.14); color: var(--red);   border: 1px solid rgba(255,61,113,0.3); }
+
+        /* Camera Feed */
+        .feed-wrap {
+            background: #000;
+            border-radius: 14px;
+            overflow: hidden;
+            width: 100%;
+            aspect-ratio: 16/9;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+        }
+        #imgFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .placeholder {
+            text-align: center;
+            color: var(--dim);
+            font-size: 0.82rem;
+            padding: 20px;
+        }
+        .placeholder-icon { font-size: 2.8rem; margin-bottom: 8px; }
+
+        .live-badge {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: rgba(0,230,118,0.85);
+            color: #000;
+            padding: 3px 9px;
+            border-radius: 99px;
+            font-size: 0.66rem;
+            font-weight: 800;
+            backdrop-filter: blur(4px);
+            display: none;
+        }
+        .fps-badge {
+            position: absolute;
+            bottom: 10px; right: 10px;
+            background: rgba(0,0,0,0.6);
+            color: rgba(255,255,255,0.7);
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 0.62rem;
+            font-family: monospace;
+            display: none;
+        }
+
+        /* Selector */
+        .cam-select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.83rem;
+            outline: none;
+            margin-bottom: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 0.83rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            color: #fff;
+        }
+        .btn-primary   { background: linear-gradient(135deg, var(--blue), var(--purple)); }
+        .btn-secondary { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text); }
+        .btn:active { transform: scale(0.97); }
+
+        .info {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.74rem;
+            color: var(--dim);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.3rem">📹</span>
+            <span class="title">MEKA Live Camera</span>
+        </div>
+        <div id="badge" class="badge badge-offline">Connecting…</div>
+    </div>
+
+    <select id="camSelect" class="cam-select" onchange="switchCamera()">
+        <option value="phone_bridge">📱 Phone Bridge Live Eye</option>
+    </select>
+
+    <div class="feed-wrap">
+        <img id="imgFeed" alt="MEKA Camera Feed">
+        <div id="placeholder" class="placeholder">
+            <div class="placeholder-icon">📷</div>
+            <div id="placeholderMsg">Waiting for MEKA camera stream…</div>
+        </div>
+        <div id="liveBadge" class="live-badge">● LIVE</div>
+        <div id="fpsBadge"  class="fps-badge">-- fps</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-primary"   onclick="snapPhoto()">📸 Snapshot</button>
+        <button class="btn btn-secondary" onclick="flipCamera()">🔄 Flip Camera</button>
+        <button class="btn btn-secondary" id="btnStream" onclick="toggleStream()">▶ Auto-Stream</button>
+        <button class="btn btn-secondary" onclick="loadCameras()">🔄 Refresh List</button>
+    </div>
+
+    <div class="info">
+        🤖 <strong>MEKA Cybernetic Viewer:</strong> Live camera frames streamed via Socket.IO — zero latency when phone bridge is connected.
+    </div>
+
+<script>
+    // ── Telegram WebApp Init ──────────────────────────────────────────
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        try { tg.setHeaderColor('#050710'); } catch(e){}
+        try { tg.setBackgroundColor('#050710'); } catch(e){}
+    }
+
+    let isStreaming = false;
+    let streamTimer = null;
+    let socket = null;
+    let currentCam = 'phone_bridge';
+    let frameCount = 0, fpsTimer = null;
+    let liveViaBroadcast = false;
+
+    const imgFeed       = document.getElementById('imgFeed');
+    const placeholder   = document.getElementById('placeholder');
+    const placeholderMsg= document.getElementById('placeholderMsg');
+    const liveBadge     = document.getElementById('liveBadge');
+    const fpsBadge      = document.getElementById('fpsBadge');
+    const badge         = document.getElementById('badge');
+
+    // ── Socket.IO Connection (live frame via broadcast) ──────────────
+    function initSocketIO() {
+        socket = io(window.location.origin, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionDelay: 2000,
+        });
+
+        socket.on('connect', () => {
+            badge.textContent = '● LIVE';
+            badge.className = 'badge badge-online';
+        });
+
+        socket.on('phone_frame_broadcast', (data) => {
+            // Received a binary frame from the phone bridge via hub
+            if (currentCam !== 'phone_bridge') return;
+            const blob = new Blob([data], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            if (imgFeed.src) URL.revokeObjectURL(imgFeed.src);
+            imgFeed.src = url;
+            imgFeed.style.display = 'block';
+            placeholder.style.display = 'none';
+            liveBadge.style.display = 'block';
+            fpsBadge.style.display = 'block';
+            liveViaBroadcast = true;
+            frameCount++;
+        });
+
+        socket.on('disconnect', () => {
+            badge.textContent = '● DISCONNECTED';
+            badge.className = 'badge badge-offline';
+            liveViaBroadcast = false;
+        });
+    }
+
+    // ── FPS Counter ───────────────────────────────────────────────────
+    fpsTimer = setInterval(() => {
+        if (liveViaBroadcast) {
+            fpsBadge.textContent = frameCount + ' fps';
+            frameCount = 0;
+        }
+    }, 1000);
+
+    // ── HTTP Snapshot Fallback ────────────────────────────────────────
+    async function fetchFrame() {
+        if (liveViaBroadcast && currentCam === 'phone_bridge') return; // Already getting live frames
+
+        const url = currentCam === 'phone_bridge'
+            ? `/api/phone/latest-frame?t=${Date.now()}`
+            : `/api/cameras/${currentCam}/snapshot?t=${Date.now()}`;
+
+        try {
+            const r = await fetch(url);
+            if (r.ok) {
+                const blob = await r.blob();
+                if (imgFeed.src) URL.revokeObjectURL(imgFeed.src);
+                imgFeed.src = URL.createObjectURL(blob);
+                imgFeed.style.display = 'block';
+                placeholder.style.display = 'none';
+                liveBadge.style.display = 'block';
+                fpsBadge.style.display = 'none';
+                badge.textContent = '● HTTP FEED';
+                badge.className = 'badge badge-online';
+            } else {
+                placeholderMsg.textContent = 'No frame yet — open /phone-bridge on your phone.';
+            }
+        } catch(e) {
+            placeholderMsg.textContent = 'Hub not reachable via HTTPS.';
+        }
+    }
+
+    function toggleStream() {
+        const btn = document.getElementById('btnStream');
+        if (isStreaming) {
+            isStreaming = false;
+            if (streamTimer) clearInterval(streamTimer);
+            btn.textContent = '▶ Auto-Stream';
+        } else {
+            isStreaming = true;
+            btn.textContent = '⏹ Stop Stream';
+            fetchFrame();
+            streamTimer = setInterval(fetchFrame, 800);
+        }
+    }
+
+    async function snapPhoto() {
+        liveViaBroadcast = false; // Force HTTP fetch for fresh snapshot
+        await fetchFrame();
+        if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+    }
+
+    async function flipCamera() {
+        try {
+            await fetch(`/api/cameras/${currentCam}/control`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'flip' })
+            });
+        } catch(e) {}
+    }
+
+    function switchCamera() {
+        currentCam = document.getElementById('camSelect').value;
+        liveViaBroadcast = false;
+        fetchFrame();
+    }
+
+    async function loadCameras() {
+        try {
+            const r = await fetch('/api/cameras/all-streams');
+            if (!r.ok) return;
+            const data = await r.json();
+            const select = document.getElementById('camSelect');
+            select.innerHTML = '';
+            (data.cameras || []).forEach(cam => {
+                const o = document.createElement('option');
+                o.value = cam.mac;
+                const icon = cam.online ? '🟢' : '🔴';
+                o.textContent = `${icon} ${cam.name || cam.device_type || 'Camera'} (${cam.ip})`;
+                select.appendChild(o);
+            });
+        } catch(e) {}
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+        initSocketIO();
+        loadCameras();
+        // Start HTTP fallback stream (Socket.IO frames will take over if connected)
+        toggleStream();
+    });
+</script>
+</body>
+</html>

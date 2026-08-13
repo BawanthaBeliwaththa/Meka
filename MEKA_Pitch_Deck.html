@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEKA — Pitch Deck & Product Brochure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════ RESET & BASE ═══════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --neon:#00d4ff;--neon2:#7c3aed;--neon3:#00ff88;
+  --pink:#ff0055;--gold:#fbbf24;--orange:#f97316;
+  --bg:#010613;--bg2:#050c1f;--bg3:#080f28;
+  --text:#c8e6ff;--dim:rgba(200,230,255,0.45);
+  --card:rgba(0,180,255,0.04);--border:rgba(0,212,255,0.15);
+  --radius:16px;
+}
+html{scroll-behavior:smooth;scroll-snap-type:y mandatory}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  overflow-x:hidden;
+}
+
+/* ═══════════════ PRINT STYLES FOR PDF ═══════════════ */
+@media print {
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+  html, body {
+    background: #010613 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .slide {
+    height: 1080px !important;
+    max-height: 1080px !important;
+    width: 1920px !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    scroll-snap-align: none !important;
+    overflow: hidden !important;
+    padding: 60px 80px !important;
+  }
+  .nav-dots, .hero-scroll {
+    display: none !important;
+  }
+}
+
+/* ═══════════════ SLIDE ENGINE ═══════════════ */
+.slide{
+  min-height:100vh;width:100%;
+  scroll-snap-align:start;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:60px 40px;
+}
+
+/* BG Grid */
+.slide::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none;z-index:0;
+}
+
+/* ═══════════════ TYPOGRAPHY ═══════════════ */
+.orb{font-family:'Orbitron',monospace}
+.mono{font-family:'Share Tech Mono',monospace}
+
+.display{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(2.8rem,7vw,5.5rem);
+  font-weight:900;line-height:1;
+  background:linear-gradient(135deg,#fff 0%,var(--neon) 50%,var(--neon2) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  text-shadow:none;
+  letter-spacing:0.04em;
+}
+.headline{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(1.6rem,4vw,2.8rem);
+  font-weight:700;color:#fff;
+  letter-spacing:0.06em;
+}
+.subhead{
+  font-size:clamp(1rem,2.5vw,1.4rem);
+  color:var(--dim);font-weight:500;
+  letter-spacing:0.06em;
+  line-height:1.6;
+}
+.tag{
+  display:inline-block;
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.68rem;letter-spacing:3px;
+  padding:4px 14px;border-radius:4px;
+  border:1px solid;text-transform:uppercase;
+}
+.tag-cyan{color:var(--neon);border-color:var(--neon);background:rgba(0,212,255,0.07)}
+.tag-purple{color:#bb88ff;border-color:#7c3aed;background:rgba(124,58,237,0.08)}
+.tag-green{color:var(--neon3);border-color:var(--neon3);background:rgba(0,255,136,0.07)}
+.tag-pink{color:#ff6688;border-color:var(--pink);background:rgba(255,0,85,0.07)}
+.tag-gold{color:var(--gold);border-color:var(--gold);background:rgba(251,191,36,0.07)}
+
+/* ═══════════════ NAV DOTS ═══════════════ */
+.nav-dots{
+  position:fixed;right:24px;top:50%;transform:translateY(-50%);
+  z-index:999;display:flex;flex-direction:column;gap:10px;
+}
+.nav-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(0,212,255,0.25);border:1px solid rgba(0,212,255,0.3);
+  cursor:pointer;transition:all 0.3s;display:block;
+}
+.nav-dot:hover,.nav-dot.active{background:var(--neon);box-shadow:0 0 10px var(--neon);border-color:var(--neon);}
+.nav-dot[data-label]::before{
+  content:attr(data-label);
+  position:absolute;right:20px;top:50%;transform:translateY(-50%);
+  white-space:nowrap;font-size:0.6rem;font-family:'Share Tech Mono',monospace;
+  color:var(--neon);opacity:0;transition:opacity 0.2s;pointer-events:none;
+}
+.nav-dot:hover[data-label]::before{opacity:1}
+
+/* ═══════════════ GLOWS ═══════════════ */
+.glow-cyan{text-shadow:0 0 20px rgba(0,212,255,0.8),0 0 50px rgba(0,212,255,0.3)}
+.glow-purple{text-shadow:0 0 20px rgba(124,58,237,0.8),0 0 50px rgba(124,58,237,0.3)}
+.glow-green{text-shadow:0 0 20px rgba(0,255,136,0.8)}
+.glow-pink{text-shadow:0 0 20px rgba(255,0,85,0.8)}
+
+/* ═══════════════ CARDS ═══════════════ */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px;
+  backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;
+  transition:transform 0.3s,border-color 0.3s,box-shadow 0.3s;
+}
+.card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--neon),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.card:hover{transform:translateY(-4px);border-color:rgba(0,212,255,0.35);box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 20px rgba(0,212,255,0.08);}
+.card:hover::after{opacity:1}
+
+.card-purple{border-color:rgba(124,58,237,0.2);background:rgba(124,58,237,0.05)}
+.card-purple::after{background:linear-gradient(90deg,transparent,#7c3aed,transparent)}
+.card-purple:hover{border-color:rgba(124,58,237,0.4);box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 20px rgba(124,58,237,0.1)}
+
+.card-green{border-color:rgba(0,255,136,0.15);background:rgba(0,255,136,0.04)}
+.card-pink{border-color:rgba(255,0,85,0.15);background:rgba(255,0,85,0.04)}
+.card-gold{border-color:rgba(251,191,36,0.2);background:rgba(251,191,36,0.04)}
+
+/* ═══════════════ GRIDS ═══════════════ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+/* ═══════════════ DIVIDER ═══════════════ */
+.divider{width:80px;height:3px;background:linear-gradient(90deg,transparent,var(--neon),transparent);margin:16px auto}
+.divider-wide{width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--neon),transparent);margin:24px auto}
+
+/* ═══════════════ METRIC RING ═══════════════ */
+.metric{text-align:center}
+.metric-num{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:900;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.metric-label{font-size:0.75rem;color:var(--dim);letter-spacing:3px;margin-top:4px}
+
+/* ═══════════════ TIMELINE ═══════════════ */
+.timeline{position:relative;padding-left:30px}
+.timeline::before{
+  content:'';position:absolute;left:8px;top:8px;bottom:8px;
+  width:2px;background:linear-gradient(to bottom,var(--neon),var(--neon2),rgba(0,0,0,0));
+}
+.timeline-item{position:relative;margin-bottom:28px}
+.timeline-dot{
+  position:absolute;left:-26px;top:4px;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--neon);box-shadow:0 0 12px var(--neon);
+  border:2px solid var(--bg);
+}
+.timeline-dot.purple{background:var(--neon2);box-shadow:0 0 12px var(--neon2)}
+.timeline-dot.green{background:var(--neon3);box-shadow:0 0 12px var(--neon3)}
+
+/* ═══════════════ PROGRESS BAR ═══════════════ */
+.progress{
+  width:100%;height:6px;background:rgba(255,255,255,0.06);
+  border-radius:3px;overflow:hidden;margin-top:8px;
+}
+.progress-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--neon2),var(--neon));
+  transition:width 1.5s ease;
+}
+
+/* ═══════════════ SLIDE 1: HERO ═══════════════ */
+#s1{
+  background:radial-gradient(ellipse at 30% 50%,rgba(0,80,120,0.3) 0%,transparent 60%),
+    radial-gradient(ellipse at 70% 20%,rgba(80,0,160,0.2) 0%,transparent 50%),var(--bg);
+  text-align:center;
+}
+.orb-ring{
+  position:absolute;
+  border-radius:50%;
+  border:1px solid;
+  animation:spin linear infinite;
+  opacity:0.15;
+}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes spin-rev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+
+.hero-logo{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(3.5rem,12vw,9rem);
+  font-weight:900;letter-spacing:0.2em;
+  color:#fff;
+  text-shadow:0 0 40px rgba(0,212,255,0.6),0 0 80px rgba(0,212,255,0.25),0 0 120px rgba(0,212,255,0.1);
+  position:relative;z-index:1;
+  animation:flicker 6s infinite;
+}
+@keyframes flicker{
+  0%,94%,100%{opacity:1}
+  95%{opacity:0.7}
+  96%{opacity:1}
+  97%{opacity:0.4}
+  98%{opacity:1}
+}
+.hero-tagline{
+  font-size:clamp(1rem,3vw,1.6rem);
+  color:var(--dim);letter-spacing:0.15em;
+  margin:12px 0 0;position:relative;z-index:1;
+}
+.hero-sub{
+  margin:24px 0 0;
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.82rem;color:rgba(0,212,255,0.6);
+  letter-spacing:4px;position:relative;z-index:1;
+}
+.hero-badges{
+  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  margin-top:32px;position:relative;z-index:1;
+}
+.hero-scroll{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  font-family:'Share Tech Mono',monospace;font-size:0.65rem;
+  color:rgba(0,212,255,0.4);letter-spacing:4px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  animation:bounce 2s infinite;
+  z-index:1;
+}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.scroll-arrow{font-size:1.2rem;color:rgba(0,212,255,0.3)}
+
+/* ═══════════════ SLIDE 2: PROBLEM ═══════════════ */
+#s2{background:var(--bg2)}
+.pain-item{
+  display:flex;align-items:flex-start;gap:16px;
+  padding:18px 20px;border-radius:12px;
+  background:rgba(255,0,85,0.05);border:1px solid rgba(255,0,85,0.15);
+  margin-bottom:14px;
+}
+.pain-icon{font-size:1.6rem;flex-shrink:0;margin-top:2px}
+.pain-title{font-weight:700;color:#fff;font-size:1.05rem;margin-bottom:4px}
+.pain-desc{font-size:0.88rem;color:var(--dim);line-height:1.5}
+
+/* ═══════════════ SLIDE 3: SOLUTION ═══════════════ */
+#s3{
+  background:radial-gradient(ellipse at center,rgba(0,50,80,0.4) 0%,transparent 70%),var(--bg);
+  text-align:center;
+}
+.feature-icon{
+  width:64px;height:64px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;margin:0 auto 16px;
+  background:var(--card);border:1px solid var(--border);
+}
+
+/* ═══════════════ SLIDE 4: ARCHITECTURE ═══════════════ */
+#s4{background:var(--bg3)}
+.arch-node{
+  text-align:center;padding:20px 16px;
+  border-radius:12px;position:relative;
+}
+.arch-icon-big{font-size:2.8rem;margin-bottom:10px}
+.arch-node-title{font-family:'Orbitron',monospace;font-size:0.72rem;font-weight:700;letter-spacing:3px;color:#fff;margin-bottom:6px}
+.arch-node-sub{font-size:0.75rem;color:var(--dim);line-height:1.4}
+.arch-center{
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,212,255,0.05);
+  border:2px solid rgba(0,212,255,0.25);
+  border-radius:50%;width:120px;height:120px;
+  font-family:'Orbitron',monospace;font-size:0.7rem;font-weight:900;
+  color:var(--neon);letter-spacing:4px;text-align:center;
+  box-shadow:0 0 40px rgba(0,212,255,0.15);
+  margin:0 auto;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 40px rgba(0,212,255,0.15)}50%{box-shadow:0 0 60px rgba(0,212,255,0.3),0 0 100px rgba(0,212,255,0.1)}}
+
+/* ═══════════════ SLIDE 5: CAPABILITIES ═══════════════ */
+#s5{background:var(--bg2)}
+.cap-row{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 16px;border-radius:10px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  margin-bottom:10px;
+  transition:all 0.25s;
+}
+.cap-row:hover{background:rgba(0,212,255,0.05);border-color:rgba(0,212,255,0.2)}
+.cap-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cap-name{font-weight:700;font-size:0.92rem;color:#fff;flex:1}
+.cap-tech{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--neon);flex-shrink:0}
+
+/* ═══════════════ SLIDE 6: PLATFORM ═══════════════ */
+#s6{background:var(--bg)}
+.platform-card{
+  text-align:center;padding:32px 20px;
+}
+.platform-icon{font-size:3.5rem;margin-bottom:14px}
+.platform-name{font-family:'Orbitron',monospace;font-size:0.8rem;font-weight:700;letter-spacing:4px;color:#fff;margin-bottom:8px}
+.platform-tech{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--neon);margin-bottom:12px}
+.platform-desc{font-size:0.82rem;color:var(--dim);line-height:1.5}
+
+/* ═══════════════ SLIDE 7: TECH STACK ═══════════════ */
+#s7{background:var(--bg3)}
+.tech-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 18px;border-radius:8px;
+  font-family:'Share Tech Mono',monospace;font-size:0.78rem;
+  border:1px solid;margin:6px;
+  transition:all 0.2s;
+}
+.tech-badge:hover{transform:scale(1.05)}
+
+/* ═══════════════ SLIDE 8: USE CASES ═══════════════ */
+#s8{background:var(--bg2)}
+.use-case{
+  padding:24px;border-radius:14px;
+  position:relative;overflow:hidden;
+}
+.use-case::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:4px;
+  border-radius:4px 0 0 4px;
+}
+.uc1::before{background:var(--neon)}
+.uc2::before{background:var(--neon2)}
+.uc3::before{background:var(--neon3)}
+.uc4::before{background:var(--gold)}
+.uc-title{font-weight:700;font-size:1.05rem;color:#fff;margin-bottom:8px}
+.uc-desc{font-size:0.85rem;color:var(--dim);line-height:1.6}
+.uc-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.uc-pill{
+  font-family:'Share Tech Mono',monospace;font-size:0.62rem;
+  padding:3px 9px;border-radius:4px;
+  background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);
+  color:var(--neon);
+}
+
+/* ═══════════════ SLIDE 9: MARKET ═══════════════ */
+#s9{background:var(--bg)}
+.market-ring{
+  position:relative;width:180px;height:180px;margin:0 auto;
+}
+.market-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.market-ring-label{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+}
+.market-ring-num{
+  font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;
+  color:var(--neon);
+}
+.market-ring-sub{font-size:0.62rem;color:var(--dim);letter-spacing:2px;margin-top:2px}
+
+/* ═══════════════ SLIDE 10: MONETIZATION ═══════════════ */
+#s10{background:var(--bg3)}
+.mono-tier{
+  padding:24px;border-radius:14px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.tier-num{
+  font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;
+  margin-bottom:4px;
+}
+.tier-name{font-weight:700;font-size:1rem;color:#fff;margin-bottom:12px;letter-spacing:2px}
+.tier-price{
+  font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;
+  margin-bottom:14px;
+}
+.tier-feature{
+  font-size:0.8rem;color:var(--dim);
+  padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;gap:8px;
+}
+.tier-feature:last-child{border:none}
+
+/* ═══════════════ SLIDE 11: ROADMAP ═══════════════ */
+#s11{background:var(--bg2)}
+
+/* ═══════════════ SLIDE 12: TEAM / ASK ═══════════════ */
+#s12{
+  background:radial-gradient(ellipse at center,rgba(0,60,100,0.4) 0%,transparent 70%),var(--bg);
+  text-align:center;
+}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:16px 36px;border-radius:10px;
+  font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;
+  letter-spacing:2px;cursor:pointer;border:none;
+  transition:all 0.25s;text-decoration:none;
+  margin:8px;
+}
+.cta-primary{
+  background:linear-gradient(135deg,rgba(0,180,255,0.2),rgba(0,80,200,0.2));
+  border:1px solid var(--neon);color:var(--neon);
+  box-shadow:0 0 30px rgba(0,212,255,0.15);
+}
+.cta-primary:hover{background:linear-gradient(135deg,rgba(0,180,255,0.35),rgba(0,80,200,0.35));box-shadow:0 0 50px rgba(0,212,255,0.3);}
+.cta-secondary{
+  background:rgba(124,58,237,0.15);
+  border:1px solid rgba(124,58,237,0.4);color:#bb88ff;
+}
+.cta-secondary:hover{background:rgba(124,58,237,0.3);box-shadow:0 0 30px rgba(124,58,237,0.2)}
+
+/* ═══════════════ SECTION LABEL ═══════════════ */
+.section-num{
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.65rem;letter-spacing:5px;
+  color:rgba(0,212,255,0.4);margin-bottom:12px;
+}
+.section-num span{color:var(--neon)}
+
+/* ═══════════════ RESPONSIVE ═══════════════ */
+@media(max-width:768px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .slide{padding:40px 20px}
+  .nav-dots{display:none}
+  .display{font-size:2.4rem}
+}
+@media(max-width:900px){
+  .grid-3{grid-template-columns:1fr 1fr}
+  .grid-4{grid-template-columns:1fr 1fr}
+}
+
+/* ═══════════════ SEPARATOR STRIPE ═══════════════ */
+.slide-num{
+  position:absolute;bottom:20px;right:24px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.6rem;letter-spacing:3px;
+  color:rgba(0,212,255,0.2);z-index:1;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV DOTS -->
+<nav class="nav-dots" id="navDots">
+  <a class="nav-dot active" data-label="COVER" href="#s1"></a>
+  <a class="nav-dot" data-label="PROBLEM" href="#s2"></a>
+  <a class="nav-dot" data-label="SOLUTION" href="#s3"></a>
+  <a class="nav-dot" data-label="ARCHITECTURE" href="#s4"></a>
+  <a class="nav-dot" data-label="CAPABILITIES" href="#s5"></a>
+  <a class="nav-dot" data-label="PLATFORMS" href="#s6"></a>
+  <a class="nav-dot" data-label="TECH STACK" href="#s7"></a>
+  <a class="nav-dot" data-label="USE CASES" href="#s8"></a>
+  <a class="nav-dot" data-label="MARKET" href="#s9"></a>
+  <a class="nav-dot" data-label="MONETIZATION" href="#s10"></a>
+  <a class="nav-dot" data-label="ROADMAP" href="#s11"></a>
+  <a class="nav-dot" data-label="INVEST" href="#s12"></a>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 1 · HERO COVER
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s1">
+  <!-- Animated rings -->
+  <div class="orb-ring" style="width:500px;height:500px;border-color:rgba(0,212,255,0.15);animation-duration:30s;top:50%;left:50%;margin:-250px 0 0 -250px"></div>
+  <div class="orb-ring" style="width:700px;height:700px;border-color:rgba(124,58,237,0.1);animation-duration:45s;animation-direction:reverse;top:50%;left:50%;margin:-350px 0 0 -350px"></div>
+  <div class="orb-ring" style="width:900px;height:900px;border-color:rgba(0,212,255,0.05);animation-duration:60s;top:50%;left:50%;margin:-450px 0 0 -450px"></div>
+
+  <div style="position:relative;z-index:1;width:100%;max-width:1000px;text-align:center">
+    <div class="tag tag-cyan" style="margin-bottom:28px">◆ PROJECT MEKA · v3.0 · 2026</div>
+    <div class="hero-logo">MEKA</div>
+    <div class="hero-tagline">The Decentralized JARVIS-Class AI Ecosystem</div>
+    <div class="divider" style="width:200px;margin:20px auto"></div>
+    <p class="subhead" style="max-width:620px;margin:0 auto">
+      One unified AI brain controlling your physical world — across every device, platform, and location. No cloud lock-in. No boundaries.
+    </p>
+    <div class="hero-badges">
+      <span class="tag tag-cyan">🤖 AI ASSISTANT</span>
+      <span class="tag tag-purple">🌐 IoT ORCHESTRATOR</span>
+      <span class="tag tag-green">📷 SURVEILLANCE</span>
+      <span class="tag tag-pink">📡 MULTI-PLATFORM</span>
+      <span class="tag tag-gold">⚡ OPEN SOURCE</span>
+    </div>
+    <div class="hero-sub" style="margin-top:40px">meka.starlight-coders.site</div>
+  </div>
+
+  <div class="hero-scroll">
+    <span>SCROLL TO EXPLORE</span>
+    <span class="scroll-arrow">▼</span>
+  </div>
+  <div class="slide-num">01 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 2 · THE PROBLEM
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s2">
+  <div style="width:100%;max-width:900px">
+    <div class="section-num">SLIDE <span>02</span> · THE PROBLEM</div>
+    <h2 class="headline glow-pink" style="margin-bottom:8px">Existing AI Assistants Are Broken</h2>
+    <p class="subhead" style="margin-bottom:36px">Smart speakers and AI tools are siloed, cloud-dependent, and dumb about the physical world.</p>
+
+    <div class="pain-item">
+      <div class="pain-icon">🔒</div>
+      <div>
+        <div class="pain-title">Cloud Lock-In & Privacy Risk</div>
+        <div class="pain-desc">Alexa, Google Home, and Siri send every word you speak to corporate servers. You have zero control over your data, and a single internet outage renders your "smart" home completely useless.</div>
+      </div>
+    </div>
+
+    <div class="pain-item">
+      <div class="pain-icon">🧱</div>
+      <div>
+        <div class="pain-title">No Physical World Integration</div>
+        <div class="pain-desc">Existing AI tools can set timers and play music. They cannot control a servo motor, stream from an IP camera, scan your local network for new devices, or route audio through different hardware in real-time.</div>
+      </div>
+    </div>
+
+    <div class="pain-item">
+      <div class="pain-icon">📦</div>
+      <div>
+        <div class="pain-title">Single-Platform, Single-Device Silos</div>
+        <div class="pain-desc">Your phone AI doesn't know about your desktop. Your desktop client can't hear your home's microphone. Every device operates in complete isolation with no unified state or fallback intelligence.</div>
+      </div>
+    </div>
+
+    <div class="pain-item" style="margin-bottom:0">
+      <div class="pain-icon">💸</div>
+      <div>
+        <div class="pain-title">Expensive Proprietary Ecosystems</div>
+        <div class="pain-desc">To get a "smart" home, you must buy vendor-specific hubs, pay monthly subscriptions, and accept incompatible ecosystems that fight each other. A $400 investment that's obsolete in 2 years.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">02 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 3 · THE SOLUTION
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s3">
+  <div style="width:100%;max-width:1100px">
+    <div class="section-num" style="text-align:center">SLIDE <span>03</span> · THE SOLUTION</div>
+    <h2 class="headline glow-cyan" style="text-align:center;margin-bottom:10px">Introducing Project MEKA</h2>
+    <p class="subhead" style="text-align:center;max-width:600px;margin:0 auto 40px">
+      A fully decentralized, open-source AI ecosystem that lives in your hardware, your phone, your browser — everywhere simultaneously.
+    </p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="feature-icon">🧠</div>
+        <div style="font-weight:700;color:#fff;font-size:1rem;margin-bottom:8px;font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px">AI ORCHESTRATION</div>
+        <p style="font-size:0.85rem;color:var(--dim);line-height:1.6">Gemini-powered natural language AI understands intent and maps it directly to physical hardware actions — LED controls, servo movements, camera snapshots.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="feature-icon" style="border-color:rgba(124,58,237,0.3)">📡</div>
+        <div style="font-weight:700;color:#fff;font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px;margin-bottom:8px">DYNAMIC FALLBACK</div>
+        <p style="font-size:0.85rem;color:var(--dim);line-height:1.6">If the physical microphone breaks, MEKA auto-routes to your phone. If the speaker fails, it switches to Bluetooth. Hardware failure is invisible to the user.</p>
+      </div>
+      <div class="card card-green">
+        <div class="feature-icon" style="border-color:rgba(0,255,136,0.2)">🌐</div>
+        <div style="font-weight:700;color:#fff;font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px;margin-bottom:8px">ZERO CLOUD DEPENDENCY</div>
+        <p style="font-size:0.85rem;color:var(--dim);line-height:1.6">Runs fully on LAN. Transitioning to local Llama 3 + Whisper for 100% offline operation. Your voice stays on your hardware, period.</p>
+      </div>
+      <div class="card card-gold">
+        <div class="feature-icon" style="border-color:rgba(251,191,36,0.2)">📷</div>
+        <div style="font-weight:700;color:#fff;font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px;margin-bottom:8px">PHONE AS BODY NODE</div>
+        <p style="font-size:0.85rem;color:var(--dim);line-height:1.6">Turn any smartphone into a camera, microphone, and speaker node for MEKA — via the Phone Bridge. No extra hardware required.</p>
+      </div>
+      <div class="card card-pink">
+        <div class="feature-icon" style="border-color:rgba(255,0,85,0.2)">🔐</div>
+        <div style="font-weight:700;color:#fff;font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px;margin-bottom:8px">BIOMETRIC SECURITY</div>
+        <p style="font-size:0.85rem;color:var(--dim);line-height:1.6">Fingerprint/FaceID gates destructive commands. Voice-print recognition ensures only the owner can trigger physical actions. One-time MAC-based device permissions.</p>
+      </div>
+      <div class="card" style="border-color:rgba(0,212,255,0.2)">
+        <div class="feature-icon">⚡</div>
+        <div style="font-weight:700;color:#fff;font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px;margin-bottom:8px">50ms STATE SYNC</div>
+        <p style="font-size:0.85rem;color:var(--dim);line-height:1.6">Firebase Realtime Database synchronizes all client states in under 50 milliseconds. Turn on a LED from Telegram and watch the Webapp UI update instantly.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 4 · ARCHITECTURE
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s4">
+  <div style="width:100%;max-width:1000px">
+    <div class="section-num" style="text-align:center">SLIDE <span>04</span> · SYSTEM ARCHITECTURE</div>
+    <h2 class="headline" style="text-align:center;margin-bottom:8px">The <span style="color:var(--neon)" class="glow-cyan">7-Pillar</span> Modular Design</h2>
+    <p class="subhead" style="text-align:center;margin-bottom:40px">Each pillar operates independently. Failure of one never cascades to others.</p>
+
+    <!-- Architecture diagram -->
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px">
+      <!-- Left column -->
+      <div>
+        <div class="arch-node card" style="margin-bottom:16px">
+          <div class="arch-icon-big">📱</div>
+          <div class="arch-node-title">ANDROID APP</div>
+          <div class="arch-node-sub">Flutter · Wake word · Pocket companion</div>
+        </div>
+        <div class="arch-node card card-purple">
+          <div class="arch-icon-big">🤖</div>
+          <div class="arch-node-title">TELEGRAM BOT</div>
+          <div class="arch-node-sub">Remote access · Emergency override · ACL secured</div>
+        </div>
+        <div class="arch-node card card-green">
+          <div class="arch-icon-big">🪟</div>
+          <div class="arch-node-title">WINDOWS APP</div>
+          <div class="arch-node-sub">System tray · Native C++ binary · Desktop AI</div>
+        </div>
+      </div>
+
+      <!-- Center hub -->
+      <div style="text-align:center">
+        <div class="arch-center">MEKA<br>IoT<br>HUB</div>
+        <div style="width:2px;height:24px;background:var(--neon);margin:8px auto;opacity:0.4"></div>
+        <div class="arch-node card" style="width:140px;margin:0 auto">
+          <div style="font-size:1.6rem">⚙️</div>
+          <div class="arch-node-title" style="font-size:0.6rem">ESP32 HARDWARE</div>
+          <div class="arch-node-sub" style="font-size:0.65rem">Physical body · Sensors · LCD · Servos</div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="arch-node card">
+          <div class="arch-icon-big">🌐</div>
+          <div class="arch-node-title">WEB DASHBOARD</div>
+          <div class="arch-node-sub">React/Vite · Cyberpunk UI · Real-time admin</div>
+        </div>
+        <div class="arch-node card card-purple" style="margin-top:16px">
+          <div class="arch-icon-big">🐧</div>
+          <div class="arch-node-title">LINUX APP</div>
+          <div class="arch-node-sub">Flutter GTK · Developer workstation client</div>
+        </div>
+        <div class="arch-node card card-gold" style="margin-top:16px">
+          <div class="arch-icon-big">🔗</div>
+          <div class="arch-node-title">PHONE BRIDGE</div>
+          <div class="arch-node-sub">WebRTC · Cam/Mic/Speaker · Any phone</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 5 · CAPABILITIES
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s5">
+  <div style="width:100%;max-width:1000px">
+    <div class="section-num">SLIDE <span>05</span> · CORE CAPABILITIES</div>
+    <h2 class="headline glow-cyan" style="margin-bottom:8px">What MEKA Can Do</h2>
+    <p class="subhead" style="margin-bottom:32px">Natural language — directly mapped to real-world hardware actions.</p>
+
+    <div class="grid-2">
+      <div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--neon);box-shadow:0 0 8px var(--neon)"></div><div class="cap-name">Network Device Discovery</div><div class="cap-tech">mDNS · ARP</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--neon2);box-shadow:0 0 8px var(--neon2)"></div><div class="cap-name">Camera Surveillance & Recording</div><div class="cap-tech">MJPEG · MP4</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--neon3);box-shadow:0 0 8px var(--neon3)"></div><div class="cap-name">Dynamic Audio Routing</div><div class="cap-tech">PCM 16kHz</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></div><div class="cap-name">Bluetooth Device Control</div><div class="cap-tech">BLE · Classic</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--pink);box-shadow:0 0 8px var(--pink)"></div><div class="cap-name">Screen Share Streaming</div><div class="cap-tech">WebRTC · Canvas</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:#ff9800;box-shadow:0 0 8px #ff9800"></div><div class="cap-name">ADB Device Control</div><div class="cap-tech">WiFi ADB</div></div>
+      </div>
+      <div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--neon);box-shadow:0 0 8px var(--neon)"></div><div class="cap-name">GPIO LED & Relay Control</div><div class="cap-tech">ESP32 GPIO</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--neon2);box-shadow:0 0 8px var(--neon2)"></div><div class="cap-name">Servo Motor Pan/Tilt</div><div class="cap-tech">PWM 50Hz</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--neon3);box-shadow:0 0 8px var(--neon3)"></div><div class="cap-name">Temperature & Humidity Telemetry</div><div class="cap-tech">DHT22</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></div><div class="cap-name">Firebase State Sync (50ms)</div><div class="cap-tech">Realtime DB</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:var(--pink);box-shadow:0 0 8px var(--pink)"></div><div class="cap-name">Telegram Remote Control</div><div class="cap-tech">Bot API</div></div>
+        <div class="cap-row"><div class="cap-dot" style="background:#e040fb;box-shadow:0 0 8px #e040fb"></div><div class="cap-name">Text-to-Speech Output</div><div class="cap-tech">Web Speech</div></div>
+      </div>
+    </div>
+
+    <!-- Voice command examples -->
+    <div class="card" style="margin-top:24px;background:rgba(0,0,0,0.4)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--dim);margin-bottom:12px;letter-spacing:3px">▸ NATURAL LANGUAGE EXAMPLES</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.76rem;padding:6px 14px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:6px;color:#7dd3fc">"Scan for new devices"</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.76rem;padding:6px 14px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:6px;color:#c4b5fd">"Start recording all cameras"</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.76rem;padding:6px 14px;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);border-radius:6px;color:#6ee7b7">"Switch mic to my phone"</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.76rem;padding:6px 14px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:6px;color:#fcd34d">"Look to the right"</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.76rem;padding:6px 14px;background:rgba(255,0,85,0.06);border:1px solid rgba(255,0,85,0.15);border-radius:6px;color:#fca5a5">"Connect Bluetooth speaker"</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.76rem;padding:6px 14px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:6px;color:#7dd3fc">"Take a snapshot of front door"</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">05 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 6 · CROSS-PLATFORM
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s6">
+  <div style="width:100%;max-width:1100px">
+    <div class="section-num" style="text-align:center">SLIDE <span>06</span> · CROSS-PLATFORM ECOSYSTEM</div>
+    <h2 class="headline" style="text-align:center;margin-bottom:8px">Every Device. <span style="color:var(--neon)" class="glow-cyan">One Brain.</span></h2>
+    <p class="subhead" style="text-align:center;margin-bottom:36px">90% shared codebase across all platforms via Flutter.</p>
+
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="card platform-card">
+        <div class="platform-icon">📱</div>
+        <div class="platform-name">ANDROID APP</div>
+        <div class="platform-tech">Flutter · Dart</div>
+        <div class="platform-desc">Always-on wake word detection. Background foreground service. Voice transcription. Full IoT Hub control in your pocket.</div>
+      </div>
+      <div class="card card-purple platform-card">
+        <div class="platform-icon">🌐</div>
+        <div class="platform-name">WEB DASHBOARD</div>
+        <div class="platform-tech">React · Vite · Socket.IO</div>
+        <div class="platform-desc">Cyberpunk admin panel. Real-time telemetry. Camera feeds. Device permission management. Works from any browser.</div>
+      </div>
+      <div class="card card-green platform-card">
+        <div class="platform-icon">🪟</div>
+        <div class="platform-name">WINDOWS APP</div>
+        <div class="platform-tech">Flutter Windows · C++</div>
+        <div class="platform-desc">System tray integration. Lightning-fast native binary. MEKA listening quietly in the background while you work.</div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card card-gold platform-card">
+        <div class="platform-icon">🐧</div>
+        <div class="platform-name">LINUX APP</div>
+        <div class="platform-tech">Flutter GTK · Linux</div>
+        <div class="platform-desc">Native GTK embedder. Perfect for developer workstations. MEKA as your coding companion on Linux.</div>
+      </div>
+      <div class="card platform-card">
+        <div class="platform-icon">🤖</div>
+        <div class="platform-name">TELEGRAM BOT</div>
+        <div class="platform-tech">Python · Telegram API</div>
+        <div class="platform-desc">Secure remote access from anywhere in the world. ACL-protected. Emergency system override from your chat app.</div>
+      </div>
+      <div class="card card-pink platform-card">
+        <div class="platform-icon">📡</div>
+        <div class="platform-name">PHONE BRIDGE</div>
+        <div class="platform-tech">WebRTC · Socket.IO · PWA</div>
+        <div class="platform-desc">Visit a URL on any phone. Instantly becomes a camera/mic/speaker node on the MEKA network. Zero app install needed.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">06 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 7 · TECH STACK
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s7">
+  <div style="width:100%;max-width:900px">
+    <div class="section-num" style="text-align:center">SLIDE <span>07</span> · TECHNOLOGY STACK</div>
+    <h2 class="headline" style="text-align:center;margin-bottom:8px">Enterprise-Grade <span style="color:var(--neon2)" class="glow-purple">Stack</span></h2>
+    <p class="subhead" style="text-align:center;margin-bottom:36px">Battle-tested technologies powering every layer of MEKA.</p>
+
+    <div style="text-align:center">
+      <!-- Frontend -->
+      <div style="margin-bottom:20px">
+        <div class="tag tag-cyan" style="margin-bottom:14px">FRONTEND & CLIENTS</div><br>
+        <span class="tech-badge" style="color:var(--neon);border-color:rgba(0,212,255,0.3)">⚛️ React 18</span>
+        <span class="tech-badge" style="color:#a78bfa;border-color:rgba(124,58,237,0.3)">⚡ Vite</span>
+        <span class="tech-badge" style="color:#54d5f5;border-color:rgba(84,213,245,0.3)">🎯 Flutter</span>
+        <span class="tech-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3)">🔥 Firebase SDK</span>
+        <span class="tech-badge" style="color:var(--neon3);border-color:rgba(0,255,136,0.25)">📡 Socket.IO Client</span>
+        <span class="tech-badge" style="color:#ff9800;border-color:rgba(255,152,0,0.3)">🎤 Web Speech API</span>
+      </div>
+      <!-- Backend -->
+      <div style="margin-bottom:20px">
+        <div class="tag tag-purple" style="margin-bottom:14px">BACKEND & AI</div><br>
+        <span class="tech-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3)">🐍 Python Flask</span>
+        <span class="tech-badge" style="color:#4ade80;border-color:rgba(74,222,128,0.3)">🔌 Flask-SocketIO</span>
+        <span class="tech-badge" style="color:#818cf8;border-color:rgba(129,140,248,0.3)">🧠 Google Gemini</span>
+        <span class="tech-badge" style="color:var(--neon);border-color:rgba(0,212,255,0.3)">🗄️ SQLite Registry</span>
+        <span class="tech-badge" style="color:#f97316;border-color:rgba(249,115,22,0.3)">📹 OpenCV / FFMPEG</span>
+        <span class="tech-badge" style="color:#c084fc;border-color:rgba(192,132,252,0.3)">🦙 Llama 3 (WIP)</span>
+      </div>
+      <!-- Infrastructure -->
+      <div style="margin-bottom:20px">
+        <div class="tag tag-green" style="margin-bottom:14px">INFRASTRUCTURE</div><br>
+        <span class="tech-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3)">🔥 Firebase Realtime DB</span>
+        <span class="tech-badge" style="color:#f97316;border-color:rgba(249,115,22,0.3)">🌐 Nginx Reverse Proxy</span>
+        <span class="tech-badge" style="color:#38bdf8;border-color:rgba(56,189,248,0.3)">☁️ VPS Deployment</span>
+        <span class="tech-badge" style="color:var(--neon3);border-color:rgba(0,255,136,0.25)">🔒 SSL/HTTPS</span>
+        <span class="tech-badge" style="color:#a78bfa;border-color:rgba(124,58,237,0.3)">📡 WebRTC P2P</span>
+      </div>
+      <!-- Hardware -->
+      <div>
+        <div class="tag tag-gold" style="margin-bottom:14px">HARDWARE</div><br>
+        <span class="tech-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3)">⚡ ESP32-WROOM-32D</span>
+        <span class="tech-badge" style="color:var(--neon);border-color:rgba(0,212,255,0.3)">🎤 INMP441 I2S Mic</span>
+        <span class="tech-badge" style="color:var(--neon3);border-color:rgba(0,255,136,0.25)">🔊 MAX98357A Speaker</span>
+        <span class="tech-badge" style="color:#f97316;border-color:rgba(249,115,22,0.3)">📺 LCD 16×2 I2C</span>
+        <span class="tech-badge" style="color:#c084fc;border-color:rgba(192,132,252,0.3)">⚙️ Servo + DHT22</span>
+        <span class="tech-badge" style="color:#38bdf8;border-color:rgba(56,189,248,0.3)">🖨️ 3D Printed Chassis</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">07 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 8 · USE CASES
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s8">
+  <div style="width:100%;max-width:1000px">
+    <div class="section-num">SLIDE <span>08</span> · USE CASES</div>
+    <h2 class="headline glow-purple" style="margin-bottom:8px">Real-World Deployments</h2>
+    <p class="subhead" style="margin-bottom:32px">MEKA adapts to any environment that needs intelligent physical control.</p>
+
+    <div class="grid-2">
+      <div class="card use-case uc1">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="font-size:2rem">🏠</span>
+          <div class="uc-title">Smart Home Automation</div>
+        </div>
+        <div class="uc-desc">Control lights, fans, door locks, and security cameras with your voice from anywhere in the world. MEKA automatically discovers new smart devices as they join the network — no manual setup required.</div>
+        <div class="uc-pills">
+          <span class="uc-pill">Voice Control</span>
+          <span class="uc-pill">Auto-Discovery</span>
+          <span class="uc-pill">Remote Access</span>
+          <span class="uc-pill">Camera Security</span>
+        </div>
+      </div>
+      <div class="card use-case uc2">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="font-size:2rem">🔬</span>
+          <div class="uc-title">Research Lab & Maker Hub</div>
+        </div>
+        <div class="uc-desc">Control servo-mounted cameras, log sensor readings from dozens of ESP32 nodes, trigger relay banks with voice commands, and stream lab footage directly to a secure admin dashboard.</div>
+        <div class="uc-pills">
+          <span class="uc-pill" style="border-color:rgba(124,58,237,0.3);background:rgba(124,58,237,0.08);color:#c4b5fd">Sensor Logging</span>
+          <span class="uc-pill" style="border-color:rgba(124,58,237,0.3);background:rgba(124,58,237,0.08);color:#c4b5fd">Relay Control</span>
+          <span class="uc-pill" style="border-color:rgba(124,58,237,0.3);background:rgba(124,58,237,0.08);color:#c4b5fd">Multi-Node</span>
+        </div>
+      </div>
+      <div class="card use-case uc3">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="font-size:2rem">🏢</span>
+          <div class="uc-title">Office / Building Security</div>
+        </div>
+        <div class="uc-desc">Deploy multiple MEKA nodes across a building. Each node streams to a centralized hub. Security team can view all camera feeds, receive motion alerts via Telegram, and remotely unlock doors — all with biometric authorization.</div>
+        <div class="uc-pills">
+          <span class="uc-pill" style="border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.06);color:#6ee7b7">Multi-Floor</span>
+          <span class="uc-pill" style="border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.06);color:#6ee7b7">Motion Alert</span>
+          <span class="uc-pill" style="border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.06);color:#6ee7b7">Biometric</span>
+        </div>
+      </div>
+      <div class="card use-case uc4">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="font-size:2rem">🎓</span>
+          <div class="uc-title">STEM Education Platform</div>
+        </div>
+        <div class="uc-desc">A complete, real-world AI+IoT system students can build from scratch. Learn embedded C++, Python APIs, Flutter mobile development, real-time databases, and WebRTC streaming — all in one project.</div>
+        <div class="uc-pills">
+          <span class="uc-pill" style="border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.07);color:#fcd34d">Open Source</span>
+          <span class="uc-pill" style="border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.07);color:#fcd34d">Full Stack</span>
+          <span class="uc-pill" style="border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.07);color:#fcd34d">Hardware Kit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">08 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 9 · MARKET OPPORTUNITY
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s9">
+  <div style="width:100%;max-width:1000px">
+    <div class="section-num" style="text-align:center">SLIDE <span>09</span> · MARKET OPPORTUNITY</div>
+    <h2 class="headline glow-cyan" style="text-align:center;margin-bottom:8px">A $150B+ Market</h2>
+    <p class="subhead" style="text-align:center;margin-bottom:40px">MEKA sits at the intersection of three explosive growth markets.</p>
+
+    <div class="grid-3" style="margin-bottom:36px">
+      <div class="card" style="text-align:center;padding:32px 20px">
+        <div class="metric-num" style="font-size:2.8rem">$150B</div>
+        <div style="height:3px;width:60px;background:linear-gradient(90deg,var(--neon2),var(--neon));border-radius:2px;margin:10px auto"></div>
+        <div class="metric-label">SMART HOME MARKET<br>by 2028</div>
+        <div style="font-size:0.78rem;color:var(--neon3);margin-top:10px;font-family:'Share Tech Mono',monospace">↑ 27% CAGR</div>
+      </div>
+      <div class="card card-purple" style="text-align:center;padding:32px 20px">
+        <div class="metric-num" style="background:linear-gradient(135deg,#c084fc,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2.8rem">$80B</div>
+        <div style="height:3px;width:60px;background:linear-gradient(90deg,#7c3aed,#c084fc);border-radius:2px;margin:10px auto"></div>
+        <div class="metric-label">AI ASSISTANT MARKET<br>by 2030</div>
+        <div style="font-size:0.78rem;color:#c084fc;margin-top:10px;font-family:'Share Tech Mono',monospace">↑ 34% CAGR</div>
+      </div>
+      <div class="card card-green" style="text-align:center;padding:32px 20px">
+        <div class="metric-num" style="background:linear-gradient(135deg,var(--neon3),#00cc66);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2.8rem">$25B</div>
+        <div style="height:3px;width:60px;background:linear-gradient(90deg,var(--neon3),#00cc66);border-radius:2px;margin:10px auto"></div>
+        <div class="metric-label">IoT HARDWARE KITS<br>MARKET by 2027</div>
+        <div style="font-size:0.78rem;color:var(--neon3);margin-top:10px;font-family:'Share Tech Mono',monospace">↑ 19% CAGR</div>
+      </div>
+    </div>
+
+    <!-- Competitive diff -->
+    <div class="card" style="background:rgba(0,0,0,0.3)">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:3px;color:var(--dim);margin-bottom:18px">▸ COMPETITIVE POSITIONING</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--dim);font-weight:600">FEATURE</th>
+              <th style="padding:10px 12px;border-bottom:1px solid var(--border);color:#fff;font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:2px">MEKA</th>
+              <th style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--dim)">Alexa</th>
+              <th style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--dim)">Google Home</th>
+              <th style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--dim)">Home Assistant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--dim)">Works Offline</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--neon3);font-weight:700">✓ WIP</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--neon3)">✓</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--dim)">Physical Hardware Control</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--neon3);font-weight:700">✓ Deep</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--gold)">Partial</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--gold)">Partial</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--neon3)">✓</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--dim)">Dynamic Hardware Fallback</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--neon3);font-weight:700">✓ Unique</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--dim)">Phone as IoT Node</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--neon3);font-weight:700">✓ Native</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;color:var(--pink)">✗</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 12px;color:var(--dim)">Open Source</td>
+              <td style="padding:9px 12px;text-align:center;color:var(--neon3);font-weight:700">✓ 100%</td>
+              <td style="padding:9px 12px;text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;text-align:center;color:var(--pink)">✗</td>
+              <td style="padding:9px 12px;text-align:center;color:var(--neon3)">✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">09 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 10 · MONETIZATION
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s10">
+  <div style="width:100%;max-width:1000px">
+    <div class="section-num" style="text-align:center">SLIDE <span>10</span> · MONETIZATION MODEL</div>
+    <h2 class="headline glow-gold" style="text-align:center;margin-bottom:8px">4 Revenue <span style="color:var(--gold)">Streams</span></h2>
+    <p class="subhead" style="text-align:center;margin-bottom:36px">From software subscriptions to physical hardware kits.</p>
+
+    <div class="grid-2" style="gap:20px">
+      <div class="card card-gold mono-tier">
+        <div class="tier-num" style="color:var(--gold)">01</div>
+        <div class="tier-name">FREEMIUM APP</div>
+        <div class="tier-price" style="color:var(--gold)">$0 → $4.99</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Free: Voice commands, basic IoT</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Pro: Gemini API host key</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Pro: Voice-print security</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Pro: Advanced ESP32 widgets</div>
+      </div>
+
+      <div class="card card-green mono-tier">
+        <div class="tier-num" style="color:var(--neon3)">02</div>
+        <div class="tier-name">HARDWARE KITS</div>
+        <div class="tier-price" style="color:var(--neon3)">$29.99 – $59.99</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Pre-soldered ESP32 node</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> 3D-printed chassis included</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> MEKA firmware pre-flashed</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Plug-and-play setup</div>
+      </div>
+
+      <div class="card card-purple mono-tier">
+        <div class="tier-num" style="color:#c084fc">03</div>
+        <div class="tier-name">ENTERPRISE LICENSE</div>
+        <div class="tier-price" style="color:#c084fc">$299 / yr</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Unlimited nodes</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Priority support</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Custom integrations</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> SLA guarantee</div>
+      </div>
+
+      <div class="card mono-tier">
+        <div class="tier-num" style="color:var(--neon)">04</div>
+        <div class="tier-name">COMMUNITY & SPONSORS</div>
+        <div class="tier-price" style="color:var(--neon)">Open</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> GitHub Sponsors</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Buy Me a Coffee tiers</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> Community workshop sales</div>
+        <div class="tier-feature"><span style="color:var(--neon3)">✓</span> STEM curriculum licensing</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">10 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 11 · ROADMAP
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s11">
+  <div style="width:100%;max-width:900px">
+    <div class="section-num">SLIDE <span>11</span> · DEVELOPMENT ROADMAP</div>
+    <h2 class="headline" style="margin-bottom:8px">The Path to <span style="color:var(--neon2)" class="glow-purple">JARVIS</span></h2>
+    <p class="subhead" style="margin-bottom:36px">A transparent, milestone-driven path to full autonomous AI integration.</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="card" style="margin-left:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:#fff">v1.0 – v2.0 · The Monolith & Network Awakening</div>
+            <span class="tag tag-green" style="font-size:0.58rem">COMPLETE</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--dim);line-height:1.5">ESP32 core firmware · Firebase integration · Initial Android app · Dynamic hardware fallback engine · mDNS/ARP network discovery</p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="card" style="margin-left:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:#fff">v2.5 – v3.0 · Persona & Decentralization</div>
+            <span class="tag tag-green" style="font-size:0.58rem">COMPLETE</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--dim);line-height:1.5">7-pillar modular architecture · Cyberpunk Web Dashboard · Telegram Bot · Phone Bridge · ADB control · Multi-camera MJPEG streaming · Production VPS deployment</p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot purple"></div>
+        <div class="card card-purple" style="margin-left:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:#fff">Q3 2026 · Local AI Integration</div>
+            <span class="tag tag-purple" style="font-size:0.58rem">IN PROGRESS</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--dim);line-height:1.5">Llama 3 local LLM integration · Whisper offline STT · Zero-latency, zero-cloud operation · Admin panel in Android app · Hardware kit v1.0 production run</p>
+          <div class="progress"><div class="progress-fill" style="width:65%"></div></div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--neon2);margin-top:6px">65% COMPLETE</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot" style="background:var(--gold);box-shadow:0 0 12px var(--gold)"></div>
+        <div class="card card-gold" style="margin-left:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:#fff">Q4 2026 · Play Store & Commercial Launch</div>
+            <span class="tag tag-gold" style="font-size:0.58rem">PLANNED</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--dim);line-height:1.5">Google Play Store release · Hardware kit store launch · Enterprise licensing · Community SDK release · Multi-language voice support</p>
+        </div>
+      </div>
+
+      <div class="timeline-item" style="margin-bottom:0">
+        <div class="timeline-dot green"></div>
+        <div class="card card-green" style="margin-left:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:#fff">2027 · MEKA Autonomous Vision</div>
+            <span class="tag tag-green" style="font-size:0.58rem">VISION</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--dim);line-height:1.5">Computer vision integration · Facial recognition node pairing · Autonomous patrol mode for security cameras · Natural language device programming ("teach MEKA a new skill")</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">11 / 12</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 12 · CTA / INVEST
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s12">
+  <div class="orb-ring" style="width:600px;height:600px;border-color:rgba(0,212,255,0.1);animation-duration:35s;top:50%;left:50%;margin:-300px 0 0 -300px"></div>
+  <div class="orb-ring" style="width:400px;height:400px;border-color:rgba(124,58,237,0.12);animation-duration:20s;animation-direction:reverse;top:50%;left:50%;margin:-200px 0 0 -200px"></div>
+
+  <div style="position:relative;z-index:1;width:100%;max-width:800px;text-align:center">
+    <div class="tag tag-cyan" style="margin-bottom:24px">◆ GET INVOLVED</div>
+    <div class="display" style="margin-bottom:16px">Join the<br>Revolution</div>
+    <div class="divider-wide"></div>
+    <p class="subhead" style="max-width:560px;margin:0 auto 36px">
+      Whether you're an investor, hardware partner, open-source contributor, or someone who just wants the coolest home AI system ever built — MEKA has a place for you.
+    </p>
+
+    <!-- Key stats -->
+    <div class="grid-4" style="margin-bottom:40px">
+      <div class="metric">
+        <div class="metric-num">7</div>
+        <div class="metric-label">PILLARS</div>
+      </div>
+      <div class="metric">
+        <div class="metric-num" style="background:linear-gradient(135deg,#c084fc,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">5+</div>
+        <div class="metric-label">PLATFORMS</div>
+      </div>
+      <div class="metric">
+        <div class="metric-num" style="background:linear-gradient(135deg,var(--neon3),#00cc66);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">50ms</div>
+        <div class="metric-label">STATE SYNC</div>
+      </div>
+      <div class="metric">
+        <div class="metric-num" style="background:linear-gradient(135deg,var(--gold),#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">90%</div>
+        <div class="metric-label">SHARED CODE</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:40px">
+      <a href="https://meka.starlight-coders.site" class="cta-btn cta-primary" target="_blank">
+        🌐 LIVE DEMO
+      </a>
+      <a href="https://gitlab.com/project-meka" class="cta-btn cta-secondary" target="_blank">
+        📂 VIEW SOURCE
+      </a>
+      <a href="mailto:bawantha@starlight-coders.site" class="cta-btn" style="background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:var(--neon3)">
+        ✉️ GET IN TOUCH
+      </a>
+    </div>
+
+    <div style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap">
+      <div style="text-align:center">
+        <div style="font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:3px;color:var(--dim);margin-bottom:4px">WEBSITE</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.85rem;color:var(--neon)">meka.starlight-coders.site</div>
+      </div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div style="text-align:center">
+        <div style="font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:3px;color:var(--dim);margin-bottom:4px">SOURCE</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.85rem;color:#c084fc">gitlab.com/project-meka</div>
+      </div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div style="text-align:center">
+        <div style="font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:3px;color:var(--dim);margin-bottom:4px">CONTACT</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.85rem;color:var(--neon3)">bawantha@starlight-coders.site</div>
+      </div>
+    </div>
+
+    <div style="margin-top:40px;padding:16px 24px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,212,255,0.1);border-radius:12px;display:inline-block">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:3px;color:var(--dim)">
+        ◆ MEKA v3.0 — Decentralized. Intelligent. Infinite Potential.
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">12 / 12</div>
+</section>
+
+<script>
+// ── Active nav dot highlighting ────────────────────────────────────────
+const slides = document.querySelectorAll('.slide');
+const dots   = document.querySelectorAll('.nav-dot');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = Array.from(slides).indexOf(entry.target);
+      dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+    }
+  });
+}, { threshold: 0.5 });
+
+slides.forEach(s => observer.observe(s));
+
+// ── Progress bars animate on scroll into view ──────────────────────────
+const progObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const fill = entry.target.querySelector('.progress-fill');
+      if (fill) {
+        const target = fill.style.width;
+        fill.style.width = '0';
+        setTimeout(() => fill.style.width = target, 200);
+      }
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.card').forEach(c => progObs.observe(c));
+
+// ── Keyboard navigation ────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const idx = Array.from(slides).findIndex(s => {
+    const r = s.getBoundingClientRect();
+    return r.top >= -100 && r.top <= 100;
+  });
+  if (e.key === 'ArrowDown' && idx < slides.length - 1) slides[idx+1].scrollIntoView({behavior:'smooth'});
+  if (e.key === 'ArrowUp'   && idx > 0)                  slides[idx-1].scrollIntoView({behavior:'smooth'});
+});
+</script>
+</body>
+</html>

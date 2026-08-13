@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEKA — Product Brochure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --neon:#00d4ff;--neon2:#7c3aed;--neon3:#00ff88;
+  --pink:#ff0055;--gold:#fbbf24;--orange:#f97316;
+  --bg:#010613;--bg2:#050c1f;--bg3:#080f28;
+  --text:#c8e6ff;--dim:rgba(200,230,255,0.55);
+  --card:rgba(0,180,255,0.04);--border:rgba(0,212,255,0.18);
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  height: 297mm;
+  padding: 18mm 18mm;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.page::before {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px; pointer-events: none; z-index: 0;
+}
+
+.page-content { position: relative; z-index: 1; flex: 1; }
+
+.page-footer {
+  position: relative; z-index: 1;
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 12px; border-top: 1px solid rgba(0,212,255,0.15);
+  font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; color: var(--dim);
+}
+
+/* TYPOGRAPHY */
+.orb { font-family: 'Orbitron', monospace; }
+.mono { font-family: 'Share Tech Mono', monospace; }
+
+h1.title {
+  font-family: 'Orbitron', monospace; font-size: 2.8rem; font-weight: 900;
+  letter-spacing: 0.1em; color: #fff; text-shadow: 0 0 30px rgba(0,212,255,0.5);
+  line-height: 1;
+}
+
+h2.subtitle {
+  font-size: 1.1rem; color: var(--neon); letter-spacing: 0.1em; font-weight: 600;
+  margin-top: 6px; text-transform: uppercase;
+}
+
+h3.section-header {
+  font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700;
+  color: #fff; letter-spacing: 2px; border-bottom: 2px solid var(--neon);
+  padding-bottom: 6px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;
+}
+
+.tag {
+  display: inline-block; font-family: 'Share Tech Mono', monospace; font-size: 0.62rem;
+  padding: 3px 10px; border-radius: 4px; border: 1px solid; text-transform: uppercase;
+}
+.tag-cyan { color: var(--neon); border-color: var(--neon); background: rgba(0,212,255,0.08); }
+.tag-purple { color: #c084fc; border-color: #7c3aed; background: rgba(124,58,237,0.1); }
+.tag-green { color: var(--neon3); border-color: var(--neon3); background: rgba(0,255,136,0.08); }
+.tag-gold { color: var(--gold); border-color: var(--gold); background: rgba(251,191,36,0.08); }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; backdrop-filter: blur(8px); margin-bottom: 12px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 6px; }
+th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--neon); color: var(--neon); font-family: 'Orbitron', monospace; font-size: 0.68rem; }
+td { padding: 6px 8px; border-bottom: 1px solid rgba(0,212,255,0.08); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 1 · COVER & PRODUCT OVERVIEW
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+      <div>
+        <span class="tag tag-cyan">OFFICIAL PRODUCT SPECIFICATION BROCHURE</span>
+        <h1 class="title" style="margin-top:10px;">MEKA AI</h1>
+        <div class="subtitle">Decentralized JARVIS-Class AI & IoT Orchestrator</div>
+      </div>
+      <div style="text-align:right;" class="mono">
+        <div style="color:var(--neon); font-size:0.9rem; font-weight:700;">SYSTEM VERSION 3.0</div>
+        <div style="color:var(--dim); font-size:0.7rem; margin-top:2px;">BUILD 2026.08.06</div>
+        <div style="color:var(--neon3); font-size:0.7rem; margin-top:2px;">● ALL SYSTEMS ONLINE</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(0,212,255,0.3); background:rgba(0,212,255,0.03); margin-bottom:20px;">
+      <h3 style="font-family:'Orbitron',monospace; font-size:0.9rem; color:#fff; margin-bottom:6px;">EXECUTIVE SUMMARY</h3>
+      <p style="font-size:0.88rem; color:var(--dim); line-height:1.5;">
+        Project MEKA is a revolutionary, decentralized AI assistant ecosystem engineered to bridge the gap between artificial intelligence and physical IoT hardware. Unlike cloud-locked smart speakers, MEKA operates across 7 independent pillars—running on your phone, desktop, web browser, and ESP32 hardware chassis seamlessly with zero cloud lock-in and a sub-50ms state synchronization engine.
+      </p>
+    </div>
+
+    <h3 class="section-header">CORE ARCHITECTURAL PILLARS</h3>
+    <div class="grid-2" style="margin-bottom:18px;">
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; font-weight:700; color:var(--neon); font-size:0.8rem;">1. FUTURE (AI) HUB</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">Python Flask brain server. Manages mDNS/ARP discovery, dynamic hardware fallback hierarchy, camera transcoding, and LLM intent parsing.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; font-weight:700; color:var(--neon2); font-size:0.8rem;">2. PHYSICAL HARDWARE</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">ESP32-WROOM-32D chassis. Non-blocking C++ firmware with I2C LCD matrix scrolling, servo pan/tilt, and optional I2S audio modules.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; font-weight:700; color:var(--neon3); font-size:0.8rem;">3. CYBERPUNK WEBAPP</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">React 18 + Vite command center. Real-time telemetry, camera streaming, and device permission management from any modern web browser.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; font-weight:700; color:var(--gold); font-size:0.8rem;">4. FLUTTER MOBILE APP</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">Cross-platform Android companion. Always-on background wake word engine ("MEKA"), voice transcription, and native biometric lock.</div>
+      </div>
+    </div>
+
+    <h3 class="section-header">SYSTEM HIGHLIGHTS AT A GLANCE</h3>
+    <div class="grid-3">
+      <div class="card" style="text-align:center;">
+        <div class="orb" style="font-size:1.8rem; font-weight:900; color:var(--neon);">50ms</div>
+        <div class="mono" style="font-size:0.65rem; color:var(--dim); margin-top:4px;">STATE SYNC LATENCY</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="orb" style="font-size:1.8rem; font-weight:900; color:var(--neon2);">100%</div>
+        <div class="mono" style="font-size:0.65rem; color:var(--dim); margin-top:4px;">LOCAL PRIVACY CAPABLE</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="orb" style="font-size:1.8rem; font-weight:900; color:var(--neon3);">7</div>
+        <div class="mono" style="font-size:0.65rem; color:var(--dim); margin-top:4px;">INDEPENDENT PILLARS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>PROJECT MEKA — PRODUCT BROCHURE</span>
+    <span>PAGE 1 OF 4</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 2 · DYNAMIC FALLBACK & HARDWARE SPECS
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <h3 class="section-header">DYNAMIC HARDWARE FALLBACK ENGINE <span class="tag tag-cyan">PATENT-PENDING LOGIC</span></h3>
+    <p style="font-size:0.85rem; color:var(--dim); line-height:1.5; margin-bottom:14px;">
+      If a physical hardware sensor or peripheral fails, MEKA automatically re-routes I/O operations through available client nodes on the network without interrupting user tasks.
+    </p>
+
+    <div class="grid-3" style="margin-bottom:20px;">
+      <div class="card" style="border-color:rgba(0,212,255,0.3);">
+        <div style="font-family:'Orbitron',monospace; font-size:0.78rem; color:var(--neon); font-weight:700; margin-bottom:6px;">🎙️ MIC HIERARCHY</div>
+        <div style="font-size:0.75rem; color:var(--dim); line-height:1.4;">
+          1. ESP32 INMP441 I2S Mic<br>
+          2. Android App Mic Stream<br>
+          3. Desktop Client (Win/Linux)<br>
+          4. Phone Bridge Node
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(124,58,237,0.3);">
+        <div style="font-family:'Orbitron',monospace; font-size:0.78rem; color:#c084fc; font-weight:700; margin-bottom:6px;">🔊 SPEAKER HIERARCHY</div>
+        <div style="font-size:0.75rem; color:var(--dim); line-height:1.4;">
+          1. ESP32 MAX98357A I2S<br>
+          2. Bluetooth Paired Soundbar<br>
+          3. Mobile Companion Speaker<br>
+          4. Web App Browser Audio
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(0,255,136,0.3);">
+        <div style="font-family:'Orbitron',monospace; font-size:0.78rem; color:var(--neon3); font-weight:700; margin-bottom:6px;">📷 CAMERA HIERARCHY</div>
+        <div style="font-size:0.75rem; color:var(--dim); line-height:1.4;">
+          1. Dedicated ESP32-CAM Node<br>
+          2. Network RTSP Security Cam<br>
+          3. WebRTC Phone Bridge Cam<br>
+          4. Desktop Webcam Node
+        </div>
+      </div>
+    </div>
+
+    <h3 class="section-header">ESP32-WROOM-32D HARDWARE PINOUT SPECIFICATIONS</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>COMPONENT</th>
+          <th>FUNCTION</th>
+          <th>ESP32 GPIO</th>
+          <th>OPERATING VOLTAGE & NOTES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Blue Status LED</td>
+          <td>Voice Listening State</td>
+          <td>GPIO 26</td>
+          <td>3.3V via 220Ω Resistor</td>
+        </tr>
+        <tr>
+          <td>Yellow Status LED</td>
+          <td>AI Processing State</td>
+          <td>GPIO 27</td>
+          <td>3.3V via 220Ω Resistor</td>
+        </tr>
+        <tr>
+          <td>Green Status LED</td>
+          <td>Action Execution Success</td>
+          <td>GPIO 14</td>
+          <td>3.3V via 220Ω Resistor</td>
+        </tr>
+        <tr>
+          <td>Red Status LED</td>
+          <td>Error / Exception Alert</td>
+          <td>GPIO 12</td>
+          <td>3.3V via 220Ω Resistor</td>
+        </tr>
+        <tr>
+          <td>DHT22 Sensor</td>
+          <td>Temperature / Humidity</td>
+          <td>GPIO 4</td>
+          <td>3.3V VCC (10kΩ Pull-up)</td>
+        </tr>
+        <tr>
+          <td>Servo Motor</td>
+          <td>Physical Camera Pan/Tilt</td>
+          <td>GPIO 18</td>
+          <td>5V Power, 3.3V PWM Signal</td>
+        </tr>
+        <tr>
+          <td>LCD 1602 (I2C)</td>
+          <td>SDA (Data Line)</td>
+          <td>GPIO 21</td>
+          <td>5V VCC, Non-blocking scrolling</td>
+        </tr>
+        <tr>
+          <td>LCD 1602 (I2C)</td>
+          <td>SCL (Clock Line)</td>
+          <td>GPIO 22</td>
+          <td>5V VCC, 400kHz I2C Bus</td>
+        </tr>
+        <tr>
+          <td>INMP441 Mic</td>
+          <td>I2S Digital Microphone</td>
+          <td>GPIO 32 / 33 / 34</td>
+          <td>3.3V VCC, Left Channel GND</td>
+        </tr>
+        <tr>
+          <td>MAX98357A Amp</td>
+          <td>I2S Audio Amplifier</td>
+          <td>GPIO 25 / 15 / 2</td>
+          <td>5V VCC, 3.2W Mono Output</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-footer">
+    <span>PROJECT MEKA — PRODUCT BROCHURE</span>
+    <span>PAGE 2 OF 4</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 3 · VOICE COMMAND MATRIX & CLIENT PLATFORMS
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <h3 class="section-header">NATURAL LANGUAGE VOICE COMMAND MATRIX</h3>
+    <p style="font-size:0.85rem; color:var(--dim); margin-bottom:12px;">
+      Natural spoken commands are parsed by LLM intent processing into structured JSON payloads executed on physical hardware.
+    </p>
+
+    <table style="margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th>USER SPOKEN VOICE COMMAND</th>
+          <th>SYSTEM INTENT PARSED</th>
+          <th>EXECUTED HARDWARE / API ACTION</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>"Scan the network for new devices"</td>
+          <td><code>iot_scan</code></td>
+          <td>Triggers ARP / mDNS broadcast scan across LAN</td>
+        </tr>
+        <tr>
+          <td>"Show me all connected cameras"</td>
+          <td><code>iot_list_cameras</code></td>
+          <td>Fetches camera registry & updates dashboard stream grid</td>
+        </tr>
+        <tr>
+          <td>"Start recording all security cameras"</td>
+          <td><code>iot_record</code></td>
+          <td>Initiates background MP4 recording on server storage</td>
+        </tr>
+        <tr>
+          <td>"Take a snapshot of the front door"</td>
+          <td><code>iot_snapshot</code></td>
+          <td>Captures high-res JPEG frame from specified camera ID</td>
+        </tr>
+        <tr>
+          <td>"Switch microphone to my phone"</td>
+          <td><code>iot_select_mic</code></td>
+          <td>Overrides fallback hierarchy & routes audio to mobile app</td>
+        </tr>
+        <tr>
+          <td>"Turn on the yellow LED"</td>
+          <td><code>esp32_led</code></td>
+          <td>Mutates Firebase state: <code>led/yellow = true</code> (50ms)</td>
+        </tr>
+        <tr>
+          <td>"Pan camera 90 degrees to the right"</td>
+          <td><code>esp32_servo</code></td>
+          <td>Sends PWM signal to GPIO 18 servo motor</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 class="section-header">CROSS-PLATFORM CLIENT ECOSYSTEM</h3>
+    <div class="grid-2">
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; color:var(--neon); font-size:0.8rem; font-weight:700;">ANDROID APP</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">Built with Flutter. Persistent background service handles "MEKA" wake word, local voice transcription, and biometric authentication.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; color:var(--neon2); font-size:0.8rem; font-weight:700;">DESKTOP CLIENTS (WIN/LINUX)</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">Compiled to native C++ and GTK binaries. Sits in system tray for workstation control and voice command input while coding.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; color:var(--neon3); font-size:0.8rem; font-weight:700;">TELEGRAM BOT</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">ACL-secured telemetry daemon. Receive security alerts, view snapshots, and trigger emergency overrides from anywhere in the world.</div>
+      </div>
+      <div class="card">
+        <div style="font-family:'Orbitron',monospace; color:var(--gold); font-size:0.8rem; font-weight:700;">PHONE BRIDGE PWA</div>
+        <div style="font-size:0.75rem; color:var(--dim); margin-top:4px;">WebRTC-powered web bridge. Instantly converts any old smartphone into a camera, microphone, and speaker node without installing an app.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>PROJECT MEKA — PRODUCT BROCHURE</span>
+    <span>PAGE 3 OF 4</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE 4 · COMMERCIAL KITS, SPECS & CONTACT
+══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <h3 class="section-header">MEKA SMART HARDWARE KITS & LICENSING</h3>
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="card" style="border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.03);">
+        <div style="font-family:'Orbitron',monospace; color:var(--gold); font-size:0.85rem; font-weight:700;">MEKA SMART NODE KIT</div>
+        <div style="font-size:1.4rem; font-weight:900; color:#fff; margin:4px 0;" class="orb">$39.99</div>
+        <ul style="font-size:0.75rem; color:var(--dim); padding-left:14px; line-height:1.5;">
+          <li>ESP32-WROOM-32D pre-soldered board</li>
+          <li>Dual I2S Microphone + Speaker module</li>
+          <li>Custom 3D-printed enclosure with LCD</li>
+          <li>Pre-flashed MEKA v3.0 firmware</li>
+        </ul>
+      </div>
+
+      <div class="card" style="border-color:rgba(124,58,237,0.3); background:rgba(124,58,237,0.03);">
+        <div style="font-family:'Orbitron',monospace; color:#c084fc; font-size:0.85rem; font-weight:700;">PRO / ENTERPRISE LICENSE</div>
+        <div style="font-size:1.4rem; font-weight:900; color:#fff; margin:4px 0;" class="orb">$299 / yr</div>
+        <ul style="font-size:0.75rem; color:var(--dim); padding-left:14px; line-height:1.5;">
+          <li>Unlimited multi-floor node deployment</li>
+          <li>Local Llama 3 offline brain license</li>
+          <li>Priority 24/7 technical support</li>
+          <li>Custom API integration & SLA</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="section-header">TECHNICAL SPECIFICATIONS SUMMARY</h3>
+    <table style="margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th>SPECIFICATION</th>
+          <th>TECHNICAL PARAMETER</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Core Backend Framework</td>
+          <td>Python 3.11 / Flask / Flask-SocketIO / SQLite3</td>
+        </tr>
+        <tr>
+          <td>Real-time Communication</td>
+          <td>WebSocket (Socket.IO) / WebRTC / mDNS / ARP</td>
+        </tr>
+        <tr>
+          <td>Database Synchronization</td>
+          <td>Firebase Realtime Database (Sub-50ms latency)</td>
+        </tr>
+        <tr>
+          <td>Frontend Stack</td>
+          <td>React 18 / Vite / CSS3 Glassmorphism / Vanilla JS</td>
+        </tr>
+        <tr>
+          <td>Mobile & Desktop Engine</td>
+          <td>Flutter 3.x / Dart / Native C++ / GTK Embedder</td>
+        </tr>
+        <tr>
+          <td>Supported Operating Systems</td>
+          <td>Android 8.0+, Windows 10/11, Ubuntu/Debian Linux, iOS Web</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card" style="text-align:center; padding:18px; border-color:rgba(0,212,255,0.3);">
+      <div style="font-family:'Orbitron',monospace; font-size:0.95rem; color:#fff; font-weight:700;">READY TO UPGRADE YOUR AI ECOSYSTEM?</div>
+      <div style="font-size:0.8rem; color:var(--dim); margin-top:4px;">Visit our live dashboard or explore the source repositories.</div>
+      <div style="display:flex; justify-content:center; gap:20px; margin-top:10px;" class="mono">
+        <span style="color:var(--neon);">🌐 meka.starlight-coders.site</span>
+        <span style="color:#c084fc;">📂 gitlab.com/project-meka</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>PROJECT MEKA — PRODUCT BROCHURE</span>
+    <span>PAGE 4 OF 4</span>
+  </div>
+</div>
+
+</body>
+</html>

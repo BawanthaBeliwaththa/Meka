@@ -1,0 +1,169 @@
+name: Build Meka
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            output_name: Meka-Linux
+            build_command: flutter build linux --release
+            artifact_path: build/linux/x64/release/bundle/
+          - os: ubuntu-latest
+            target: android
+            output_name: Meka-Android.apk
+            build_command: flutter build apk --release
+            artifact_path: build/app/outputs/flutter-apk/app-release.apk
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Java (for Android)
+      if: matrix.target == 'android'
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.6'
+        channel: 'stable'
+
+    - name: Install Linux Dependencies
+      if: matrix.target == 'linux'
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libasound2-dev libpulse-dev
+
+    - name: Generate Platforms
+      run: flutter create --platforms=${{ matrix.target }} --project-name=meka .
+
+    - name: Fix Android Build Config
+      if: matrix.target == 'android'
+      run: |
+        python3 << 'PYEOF'
+        import os, re
+
+        def rw(path, fn):
+            if os.path.exists(path):
+                with open(path, 'r') as f: c = f.read()
+                nc = fn(c)
+                with open(path, 'w') as f: f.write(nc)
+
+        # Kotlin + AGP versions
+        rw('android/build.gradle', lambda c: re.sub(
+            r'ext\.kotlin_version\s*=\s*["\'].*?["\']',
+            'ext.kotlin_version = "1.9.22"', c))
+        rw('android/build.gradle', lambda c: re.sub(
+            r'classpath\s+"com\.android\.tools\.build:gradle:.*?"',
+            'classpath "com.android.tools.build:gradle:7.4.2"', c))
+        rw('android/settings.gradle', lambda c: re.sub(
+            r'id\s+"org\.jetbrains\.kotlin\.android"\s+version\s+".*?"',
+            'id "org.jetbrains.kotlin.android" version "1.9.22"', c))
+        rw('android/settings.gradle', lambda c: re.sub(
+            r'id\s+"com\.android\.application"\s+version\s+".*?"',
+            'id "com.android.application" version "7.4.2"', c))
+
+        # SDK versions — minSdk 23 (required by record package), covers Android 6+
+        rw('android/app/build.gradle', lambda c: re.sub(
+            r'flutter\.minSdkVersion', '23', c))
+        rw('android/app/build.gradle', lambda c: re.sub(
+            r'flutter\.compileSdkVersion', '34', c))
+        rw('android/app/build.gradle', lambda c: re.sub(
+            r'flutter\.targetSdkVersion', '34', c))
+
+        # Permissions — only cross-version safe ones
+        manifest = 'android/app/src/main/AndroidManifest.xml'
+        if os.path.exists(manifest):
+            with open(manifest, 'r') as f: c = f.read()
+            perms = [
+                'android.permission.RECORD_AUDIO',
+                'android.permission.INTERNET',
+                'android.permission.RECEIVE_BOOT_COMPLETED',
+                'android.permission.CALL_PHONE',
+                'android.permission.SEND_SMS',
+                'android.permission.READ_CONTACTS',
+                'android.permission.WAKE_LOCK',
+                'android.permission.FOREGROUND_SERVICE',
+                'android.permission.SYSTEM_ALERT_WINDOW',
+                'android.permission.QUERY_ALL_PACKAGES',
+                'android.permission.MANAGE_EXTERNAL_STORAGE',
+                'android.permission.FOREGROUND_SERVICE_MICROPHONE',
+                'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+            ]
+            inject = ''
+            for p in perms:
+                if p not in c:
+                    inject += f'    <uses-permission android:name="{p}" />\n'
+            # POST_NOTIFICATIONS only for Android 13+
+            if 'POST_NOTIFICATIONS' not in c:
+                inject += '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />\n'
+            if inject:
+                c = c.replace('<application', inject + '<application', 1)
+            
+            # Inject BootReceiver declaration inside <application>
+            receiver_xml = """
+        <receiver android:name=".BootReceiver" android:enabled="true" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+            """
+            if 'BootReceiver' not in c:
+                c = c.replace('</application>', receiver_xml + '\n    </application>', 1)
+
+            # Inject Foreground Service declaration inside <application>
+            service_xml = """
+        <service android:name=".MekaForegroundService" android:foregroundServiceType="microphone" android:exported="false" android:stopWithTask="false" />
+            """
+            if 'MekaForegroundService' not in c:
+                c = c.replace('</application>', service_xml + '\n    </application>', 1)
+                 
+            # Exclude main activity from recents list to prevent swipe-kills
+            if 'android:excludeFromRecents="true"' not in c:
+                c = c.replace('<activity', '<activity android:excludeFromRecents="true"', 1)
+                 
+            with open(manifest, 'w') as f: f.write(c)
+            print("Manifest patched")
+
+        print("Android config patched successfully")
+        PYEOF
+
+    - name: Inject Custom Native Code
+      if: matrix.target == 'android'
+      run: |
+        DEST="android/app/src/main/kotlin/com/example/meka"
+        mkdir -p "$DEST"
+        cp android_src/MainActivity.kt "$DEST/MainActivity.kt"
+        cp android_src/BootReceiver.kt "$DEST/BootReceiver.kt"
+        cp android_src/MekaForegroundService.kt "$DEST/MekaForegroundService.kt"
+        echo "Native files injected"
+      shell: bash
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Generate App Icons
+      if: matrix.target == 'android'
+      run: dart run flutter_launcher_icons
+
+    - name: Build
+      run: ${{ matrix.build_command }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.output_name }}
+        path: ${{ matrix.artifact_path }}

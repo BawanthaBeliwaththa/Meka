@@ -57,7 +57,7 @@ jobs:
       - name: Build APK
         run: |
           cd "./Android APP"
-          flutter build apk --release --no-tree-shake-icons --gradle-task assembleRelease
+          flutter build apk --release --no-tree-shake-icons
   build-windows:
     name: Build Windows App
     runs-on: windows-latest

@@ -38,6 +38,10 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
+      - name: Generate Android debug keystore if missing
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000 || true
       - name: Set up Android SDK locals
         working-directory: ./Android APP
         run: |
@@ -78,7 +82,7 @@ jobs:
         run: flutter pub get
       - name: Build Windows executable
         working-directory: ./Windows APP
-        run: flutter build windows --release
+        run: flutter build windows --release --no-tree-shake-icons
 
   # ─── Linux App ──────────────────────────────────────────────────────────────
   build-linux:
@@ -114,4 +118,4 @@ jobs:
         run: flutter pub get
       - name: Build Linux executable
         working-directory: ./Linux APP
-        run: flutter build linux --release
+        run: flutter build linux --release --no-tree-shake-icons

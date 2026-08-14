@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace "com.example.meka"
-    compileSdk 34
+    compileSdkVersion 34
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -19,8 +19,8 @@ android {
 
     defaultConfig {
         applicationId "com.example.meka"
-        minSdk 23
-        targetSdk 34
+        minSdkVersion 23
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0.0"
         multiDexEnabled true

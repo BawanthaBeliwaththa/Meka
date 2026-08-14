@@ -42,12 +42,6 @@ jobs:
         run: |
           mkdir -p ~/.android
           keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000 || true
-      - name: Set up Android SDK locals
-        working-directory: ./Android APP
-        run: |
-          FLUTTER_PATH=$(dirname $(dirname $(which flutter)))
-          echo "flutter.sdk=${FLUTTER_PATH}" > android/local.properties
-          echo "sdk.dir=${ANDROID_SDK_ROOT}" >> android/local.properties
       - name: Flutter pub get
         working-directory: ./Android APP
         run: flutter pub get
@@ -68,16 +62,6 @@ jobs:
           cache: true
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
-      - name: Generate fresh Windows platform files
-        run: |
-          if (Test-Path "$env:GITHUB_WORKSPACE\Windows APP\windows") {
-            Remove-Item -Recurse -Force "$env:GITHUB_WORKSPACE\Windows APP\windows"
-          }
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\Windows APP\windows"
-          New-Item -ItemType Directory -Force -Path "C:\temp_win"
-          Set-Location "C:\temp_win"
-          flutter create --platforms=windows --project-name=meka_windows .
-          Copy-Item -Recurse -Force "windows\*" "$env:GITHUB_WORKSPACE\Windows APP\windows\"
       - name: Flutter pub get
         working-directory: ./Windows APP
         run: flutter pub get
@@ -107,14 +91,6 @@ jobs:
           cache: true
       - name: Enable Linux desktop
         run: flutter config --enable-linux-desktop
-      - name: Generate fresh Linux platform files
-        run: |
-          rm -rf "$GITHUB_WORKSPACE/Linux APP/linux"
-          mkdir -p "$GITHUB_WORKSPACE/Linux APP/linux"
-          mkdir -p /tmp/gen_lin
-          cd /tmp/gen_lin
-          flutter create --platforms=linux --project-name=meka_linux .
-          cp -r linux/* "$GITHUB_WORKSPACE/Linux APP/linux/"
       - name: Flutter pub get
         working-directory: ./Linux APP
         run: flutter pub get

@@ -52,9 +52,6 @@ jobs:
         run: |
           mkdir -p ~/.android
           keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000 || true
-      - name: Scaffold & Refresh Android platform
-        working-directory: ./Android APP
-        run: flutter create --platforms=android .
       - name: Flutter pub get
         working-directory: ./Android APP
         run: flutter pub get
@@ -74,7 +71,7 @@ jobs:
           name: meka-android-apks
           path: MEKA-Android-*.apk
 
-  # ─── Windows App ────────────────────────────────────────────────────────────
+  # ─── Windows App ────────────────────────────────────────────────────
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
@@ -87,9 +84,6 @@ jobs:
           cache: true
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
-      - name: Scaffold & Refresh Windows platform
-        working-directory: ./Windows APP
-        run: flutter create --platforms=windows .
       - name: Flutter pub get
         working-directory: ./Windows APP
         run: flutter pub get
@@ -130,9 +124,6 @@ jobs:
           cache: true
       - name: Enable Linux desktop
         run: flutter config --enable-linux-desktop
-      - name: Scaffold & Refresh Linux platform
-        working-directory: ./Linux APP
-        run: flutter create --platforms=linux .
       - name: Flutter pub get
         working-directory: ./Linux APP
         run: flutter pub get

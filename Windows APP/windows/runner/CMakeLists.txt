@@ -11,7 +11,7 @@ add_executable("${BINARY_NAME}" WIN32
   "resource.h"
   "runner.exe.manifest"
   "Runner.rc"
-  "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
+  "${FLUTTER_MANAGED_DIR}/ephemeral/generated_plugin_registrant.cc"
 )
 
 apply_standard_settings("${BINARY_NAME}")

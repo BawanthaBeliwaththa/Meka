@@ -55,10 +55,10 @@ jobs:
       - name: Flutter pub get
         working-directory: ./Android APP
         run: flutter pub get
-      - name: Build Universal & Split APKs
+      - name: Build Universal APK
         working-directory: ./Android APP
         run: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons -v > build_android.log 2>&1 || (cat build_android.log | tail -n 120 && exit 1)
       - name: Prepare APK Artifacts
         run: |
           mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-Android-Universal.apk" || true
@@ -67,8 +67,14 @@ jobs:
         with:
           name: meka-android-apks
           path: MEKA-Android-*.apk
+      - name: Upload Android Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-android
+          path: Android APP/build_android.log
 
-  # ─── Windows App ────────────────────────────────────────────────────────────
+  # ─── Windows App ────────────────────────────────────────────────────
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
@@ -86,7 +92,12 @@ jobs:
         run: flutter pub get
       - name: Build Windows executable
         working-directory: ./Windows APP
-        run: flutter build windows --release --no-tree-shake-icons
+        run: |
+          flutter build windows --release --no-tree-shake-icons -v > build_windows.log 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content build_windows.log | Select-Object -Last 120
+            exit 1
+          }
       - name: Package Windows ZIP
         run: |
           $releaseDir = "Windows APP\build\windows\x64\runner\Release"
@@ -98,6 +109,12 @@ jobs:
         with:
           name: meka-windows-app
           path: MEKA-Windows-Portable.zip
+      - name: Upload Windows Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-windows
+          path: Windows APP/build_windows.log
 
   # ─── Linux App ──────────────────────────────────────────────────────────────
   build-linux:
@@ -126,7 +143,8 @@ jobs:
         run: flutter pub get
       - name: Build Linux executable
         working-directory: ./Linux APP
-        run: flutter build linux --release --no-tree-shake-icons
+        run: |
+          flutter build linux --release --no-tree-shake-icons -v > build_linux.log 2>&1 || (cat build_linux.log | tail -n 120 && exit 1)
       - name: Package .deb and tar.gz
         run: |
           PKG_DIR="meka-deb-pkg"
@@ -149,3 +167,9 @@ jobs:
           path: |
             MEKA-Linux-amd64.deb
             MEKA-Linux-Portable.tar.gz
+      - name: Upload Linux Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-linux
+          path: Linux APP/build_linux.log

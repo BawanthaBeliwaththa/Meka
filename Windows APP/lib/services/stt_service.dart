@@ -1,27 +1,27 @@
+// lib/services/stt_service.dart — MEKA Desktop (Windows & Linux)
+// Speech-to-text stub for desktop. Command transcription is handled
+// directly by WakeWordService via Gemini audio API (chatWithAudio).
+// This service exists for future direct STT integration.
 import 'dart:async';
 
 class SttService {
-  bool _initialized = false;
-  bool _listening = false;
+  static final SttService _instance = SttService._internal();
+  factory SttService() => _instance;
+  SttService._internal();
+
+  bool _isListening = false;
+  bool get isListening => _isListening;
 
   Future<bool> initialize() async {
-    _initialized = true;
     return true;
   }
 
-  Future<String> listenOnce({int timeoutSeconds = 8}) async {
-    await initialize();
-    return '';
-  }
-
-  Stream<String> listenStream() {
-    final controller = StreamController<String>();
-    return controller.stream;
+  Future<String?> transcribeOnce() async {
+    // Transcription is handled by WakeWordService.chatWithAudio (Gemini API)
+    return null;
   }
 
   void stop() {
-    _listening = false;
+    _isListening = false;
   }
-
-  bool get isListening => _listening;
 }

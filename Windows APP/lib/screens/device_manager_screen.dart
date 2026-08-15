@@ -127,7 +127,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen>
     if (cmd.isEmpty || _shellRunning) return;
     _shellController.clear();
     setState(() {
-      _shellLog.add(_ShellEntry(type: 'input', text: '$ $cmd'));
+      _shellLog.add(_ShellEntry(type: 'input', text: '\$ $cmd'));
       _shellRunning = true;
     });
     final r = await AdbService().runShell(serial, cmd);

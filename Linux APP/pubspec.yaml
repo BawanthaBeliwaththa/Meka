@@ -15,12 +15,18 @@ dependencies:
   web_socket_channel: ^2.4.0
   shared_preferences: ^2.2.2
   path_provider: ^2.1.1
-  record: ^5.0.5
+  flutter_tts: ^3.8.3
+  record: 5.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+
+dependency_overrides:
+  record_windows: 2.2.3
+  record_platform_interface: 2.1.0
+  record_linux: 2.1.1
 
 flutter:
   uses-material-design: true

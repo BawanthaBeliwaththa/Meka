@@ -211,6 +211,7 @@ jobs:
   # ── Unified GitHub Release ───────────────────────────────────────────────────
   publish-release:
     name: Publish GitHub Release
+    if: always() && !cancelled()
     needs: [build-webapp, build-android, build-windows, build-linux]
     runs-on: ubuntu-latest
 

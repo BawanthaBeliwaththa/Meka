@@ -70,7 +70,7 @@ jobs:
         working-directory: ./Android APP
         run: flutter pub get
 
-      - name: Build Universal & Split APKs
+      - name: Build Universal APK
         working-directory: ./Android APP
         run: |
           VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
@@ -78,16 +78,11 @@ jobs:
           flutter build apk --release --no-tree-shake-icons \
             --build-name="${VER}" \
             --build-number=${{ github.run_number }}
-          flutter build apk --release --split-per-abi --no-tree-shake-icons \
-            --build-name="${VER}" \
-            --build-number=${{ github.run_number }}
 
       - name: Prepare APK Artifacts
         run: |
           VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}"
-          mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-${VERSION}-Android-Universal.apk" || true
-          mv "Android APP/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "MEKA-${VERSION}-Android-arm64.apk" || true
-          mv "Android APP/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "MEKA-${VERSION}-Android-arm32.apk" || true
+          mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-${VERSION}-Android-Universal.apk"
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
@@ -98,7 +93,7 @@ jobs:
   # ── Windows App Build ─────────────────────────────────────────────────────────
   build-windows:
     name: Build Windows Client
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
@@ -127,6 +122,8 @@ jobs:
           $releaseDir = "Windows APP\build\windows\x64\runner\Release"
           if (Test-Path $releaseDir) {
             Compress-Archive -Path "$releaseDir\*" -DestinationPath "MEKA-${version}-Windows-Portable.zip"
+          } else {
+            exit 1
           }
 
       - name: Upload Windows Artifacts
@@ -198,6 +195,8 @@ jobs:
             mkdir -p "${TAR_DIR}"
             cp -r "${BUNDLE_DIR}/"* "${TAR_DIR}/"
             tar -czf "${TAR_DIR}.tar.gz" "${TAR_DIR}/"
+          else
+            exit 1
           fi
 
       - name: Upload Linux Artifacts
@@ -241,8 +240,6 @@ jobs:
 
             ### 📱 Android Mobile Client
             - `MEKA-${{ github.ref_name }}-Android-Universal.apk`
-            - `MEKA-${{ github.ref_name }}-Android-arm64.apk`
-            - `MEKA-${{ github.ref_name }}-Android-arm32.apk`
 
             ### 🖥️ Windows Desktop Client
             - `MEKA-${{ github.ref_name }}-Windows-Portable.zip`

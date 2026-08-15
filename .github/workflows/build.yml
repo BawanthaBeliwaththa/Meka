@@ -61,22 +61,10 @@ jobs:
       - name: Build Universal APK
         working-directory: ./Android APP
         run: |
-          flutter build apk --release --no-tree-shake-icons -v > ../android_build.log 2>&1 || true
+          flutter build apk --release --no-tree-shake-icons
       - name: Prepare APK Artifacts
         run: |
-          mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-Android-Universal.apk" || true
-      - name: Push Android Log to Branch
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B debug-android-logs
-          git add -f android_build.log || true
-          git commit -m "ci: android build log" || true
-          git push -f origin debug-android-logs || true
-      - name: Check APK Built
-        run: |
-          test -f "MEKA-Android-Universal.apk"
+          mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-Android-Universal.apk"
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -86,7 +74,7 @@ jobs:
   # ─── Windows App ────────────────────────────────────────────────────
   build-windows:
     name: Build Windows App
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -102,28 +90,15 @@ jobs:
       - name: Build Windows executable
         working-directory: ./Windows APP
         run: |
-          flutter build windows --release --no-tree-shake-icons -v > ../windows_build.log 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Build failed"
-          }
-      - name: Push Windows Log to Branch
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B debug-windows-logs
-          git add -f windows_build.log
-          git commit -m "ci: windows build log"
-          git push -f origin debug-windows-logs
+          flutter build windows --release --no-tree-shake-icons
       - name: Package Windows ZIP
         run: |
           $releaseDir = "Windows APP\build\windows\x64\runner\Release"
           if (Test-Path $releaseDir) {
             Compress-Archive -Path "$releaseDir\*" -DestinationPath "MEKA-Windows-Portable.zip"
+          } else {
+            exit 1
           }
-      - name: Check Windows ZIP Built
-        run: |
-          if (-not (Test-Path "MEKA-Windows-Portable.zip")) { exit 1 }
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -158,16 +133,7 @@ jobs:
       - name: Build Linux executable
         working-directory: ./Linux APP
         run: |
-          flutter build linux --release --no-tree-shake-icons -v > ../linux_build.log 2>&1 || true
-      - name: Push Linux Log to Branch
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B debug-linux-logs
-          git add -f linux_build.log || true
-          git commit -m "ci: linux build log" || true
-          git push -f origin debug-linux-logs || true
+          flutter build linux --release --no-tree-shake-icons
       - name: Package .deb and tar.gz
         run: |
           PKG_DIR="meka-deb-pkg"

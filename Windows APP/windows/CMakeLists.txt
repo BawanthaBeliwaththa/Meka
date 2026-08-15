@@ -16,4 +16,6 @@ set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 
 add_subdirectory("${FLUTTER_MANAGED_DIR}")
 
+include(flutter/generated_plugins.cmake OPTIONAL)
+
 add_subdirectory("runner")

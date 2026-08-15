@@ -27,9 +27,15 @@ target_link_libraries(flutter INTERFACE
   PkgConfig::GTK
 )
 
+set(FLUTTER_MANAGED_DIR "${EPHEMERAL_DIR}" PARENT_SCOPE)
+
 # Tool backend
 add_custom_command(
-  OUTPUT ${FLUTTER_LIB} ${EPHEMERAL_DIR}/flutter_linux/flutter_linux.h
+  OUTPUT
+    ${FLUTTER_LIB}
+    ${EPHEMERAL_DIR}/flutter_linux/flutter_linux.h
+    ${EPHEMERAL_DIR}/generated_plugin_registrant.cc
+    ${EPHEMERAL_DIR}/generated_plugin_registrant.h
   COMMAND ${CMAKE_COMMAND} -E env
     ${FLUTTER_TOOL_ENVIRONMENT}
     "${FLUTTER_ROOT}/packages/flutter_tools/bin/tool_backend.sh"

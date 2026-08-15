@@ -26,14 +26,14 @@ add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 add_executable(${BINARY_NAME}
   "main.cc"
   "my_application.cc"
-  "${FLUTTER_MANAGED_DIR}/ephemeral/generated_plugin_registrant.cc"
+  "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
 )
 
 apply_standard_settings(${BINARY_NAME})
 target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE ${GTK_LIBRARIES})
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_include_directories(${BINARY_NAME} PRIVATE "${FLUTTER_MANAGED_DIR}/ephemeral")
+target_include_directories(${BINARY_NAME} PRIVATE "${FLUTTER_MANAGED_DIR}")
 target_include_directories(${BINARY_NAME} PRIVATE ${GTK_INCLUDE_DIRS})
 
 include(flutter/generated_plugins.cmake OPTIONAL)

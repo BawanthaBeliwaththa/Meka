@@ -4,14 +4,13 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "meka_windows")
 
 add_executable("${BINARY_NAME}" WIN32
-  "main.cpp"
   "flutter_window.cpp"
-  "win32_window.cpp"
+  "main.cpp"
   "utils.cpp"
-  "resource.h"
-  "runner.exe.manifest"
-  "Runner.rc"
+  "win32_window.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../flutter/ephemeral/generated_plugin_registrant.cc"
+  "Runner.rc"
+  "runner.exe.manifest"
 )
 
 apply_standard_settings("${BINARY_NAME}")
@@ -22,10 +21,11 @@ target_compile_definitions("${BINARY_NAME}" PRIVATE
   "_UNICODE"
 )
 
-target_link_libraries("${BINARY_NAME}" PRIVATE flutter flutter_wrapper_app)
-target_include_directories("${BINARY_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories("${BINARY_NAME}" PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/../flutter/generated_plugins.cmake" OPTIONAL)
+target_link_libraries("${BINARY_NAME}" PRIVATE flutter flutter_wrapper_app)
 target_link_libraries("${BINARY_NAME}" PRIVATE ${PLUGIN_BUNDLED_LIBRARIES})
 
 add_dependencies("${BINARY_NAME}" flutter_assemble)

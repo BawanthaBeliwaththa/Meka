@@ -89,8 +89,7 @@ jobs:
         run: flutter pub get
       - name: Build Windows executable
         working-directory: ./Windows APP
-        run: |
-          flutter build windows --release --no-tree-shake-icons
+        run: flutter build windows --release --no-tree-shake-icons
       - name: Package Windows ZIP
         run: |
           $releaseDir = "Windows APP\build\windows\x64\runner\Release"
@@ -132,8 +131,7 @@ jobs:
         run: flutter pub get
       - name: Build Linux executable
         working-directory: ./Linux APP
-        run: |
-          flutter build linux --release --no-tree-shake-icons
+        run: flutter build linux --release --no-tree-shake-icons
       - name: Package .deb and tar.gz
         run: |
           PKG_DIR="meka-deb-pkg"

@@ -51,20 +51,17 @@ jobs:
       - name: Generate Android debug keystore if missing
         run: |
           mkdir -p ~/.android
-          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000 || true
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keysize 2048 -validity 10000 || true
       - name: Flutter pub get
         working-directory: ./Android APP
         run: flutter pub get
       - name: Build Universal & Split APKs
         working-directory: ./Android APP
         run: |
-          flutter build apk --release --no-tree-shake-icons
-          flutter build apk --release --split-per-abi --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons -v > build.log 2>&1 || (echo "### Android Build Failed" >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && tail -n 80 build.log >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && cat build.log | tail -n 80 && exit 1)
       - name: Prepare APK Artifacts
         run: |
           mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-Android-Universal.apk" || true
-          mv "Android APP/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "MEKA-Android-arm64.apk" || true
-          mv "Android APP/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "MEKA-Android-arm32.apk" || true
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -89,7 +86,13 @@ jobs:
         run: flutter pub get
       - name: Build Windows executable
         working-directory: ./Windows APP
-        run: flutter build windows --release --no-tree-shake-icons
+        run: |
+          $output = flutter build windows --release --no-tree-shake-icons -v 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Windows Build Failed`n``````n$($output | Select-Object -Last 80 | Out-String)``````n"
+            Write-Host ($output | Select-Object -Last 80 | Out-String)
+            exit 1
+          }
       - name: Package Windows ZIP
         run: |
           $releaseDir = "Windows APP\build\windows\x64\runner\Release"
@@ -129,7 +132,8 @@ jobs:
         run: flutter pub get
       - name: Build Linux executable
         working-directory: ./Linux APP
-        run: flutter build linux --release --no-tree-shake-icons
+        run: |
+          flutter build linux --release --no-tree-shake-icons -v > build.log 2>&1 || (echo "### Linux Build Failed" >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && tail -n 80 build.log >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && cat build.log | tail -n 80 && exit 1)
       - name: Package .deb and tar.gz
         run: |
           PKG_DIR="meka-deb-pkg"

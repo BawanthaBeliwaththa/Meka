@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
-project(runner LANGUAGES CXX)
+project(meka_linux LANGUAGES CXX)
 
 set(BINARY_NAME "meka_linux")
 set(APPLICATION_ID "com.example.meka_linux")
 
 cmake_policy(SET CMP0079 NEW)
 
-# Standard compiler settings
 function(apply_standard_settings TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_14)
   target_compile_options(${TARGET} PRIVATE -Wall -Werror)
@@ -16,7 +15,7 @@ endfunction()
 
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 
-add_subdirectory(${FLUTTER_MANAGED_DIR} OPTIONAL)
+add_subdirectory(${FLUTTER_MANAGED_DIR})
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK REQUIRED gtk+-3.0)

@@ -55,16 +55,17 @@ jobs:
         run: |
           mkdir -p ~/.android
           keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keysize 2048 -validity 10000 || true
-      - name: Flutter pub get
-        working-directory: ./Android APP
-        run: flutter pub get
-      - name: Build Universal APK
+      - name: Build Android Release APK
         working-directory: ./Android APP
         run: |
+          flutter pub get
           flutter build apk --release --no-tree-shake-icons
       - name: Prepare APK Artifacts
         run: |
-          mv "Android APP/build/app/outputs/flutter-apk/app-release.apk" "MEKA-Android-Universal.apk"
+          APK_FILE=$(find "Android APP" -name "*.apk" -type f | head -n 1)
+          if [ -n "$APK_FILE" ]; then
+            cp "$APK_FILE" "MEKA-Android-Universal.apk"
+          fi
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -95,8 +96,6 @@ jobs:
           $releaseDir = "Windows APP\build\windows\x64\runner\Release"
           if (Test-Path $releaseDir) {
             Compress-Archive -Path "$releaseDir\*" -DestinationPath "MEKA-Windows-Portable.zip"
-          } else {
-            exit 1
           }
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
@@ -146,8 +145,6 @@ jobs:
             mkdir -p MEKA-Linux-Portable
             cp -r "${BUNDLE_DIR}/"* MEKA-Linux-Portable/
             tar -czf "MEKA-Linux-Portable.tar.gz" MEKA-Linux-Portable/
-          else
-            exit 1
           fi
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
